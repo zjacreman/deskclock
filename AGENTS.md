@@ -19,6 +19,7 @@ The most critical part of the application is how it handles "large" numbers in a
 - **Drawing**:
     - It repeats each row of the base glyph `scale` times vertically.
     - It repeats each character in the row string `scale` times horizontally.
+    - A single-cell spacer is added between glyphs to prevent blending.
 - **Fallback**: If the terminal is too small to display even the base 1x scale, it falls back to a standard `ratatui::widgets::Paragraph`.
 
 #### UI Layout
