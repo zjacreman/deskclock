@@ -1,20 +1,20 @@
+use chrono::Local;
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
+    Terminal,
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Style, Color},
-    widgets::{Paragraph},
-    Terminal,
+    style::{Color, Style},
+    widgets::Paragraph,
 };
 use std::{
     error::Error,
     time::{Duration, Instant},
 };
-use chrono::Local;
 
 mod font;
 use font::LargeFont;
@@ -26,13 +26,13 @@ struct App {
 
 impl App {
     fn new() -> Self {
-        Self { 
+        Self {
             should_quit: false,
             font: LargeFont::new(),
         }
     }
 
-    fn render_large_text(&self, f: &mut ratatui::Frame, area: Rect, text: &str) {
+    fn render_large_text(&self, f: &mut ratatui::Frame, area: Rect, text: &str, color: Color) {
         let base_w = self.font.glyph_width() as usize;
         let base_h = self.font.glyph_height() as usize;
         let text_chars: Vec<char> = text.chars().collect();
@@ -52,7 +52,9 @@ impl App {
 
         // If it doesn't fit even at scale 1, fallback to normal text
         if scaled_w > area.width as usize || scaled_h > area.height as usize {
-            let p = Paragraph::new(text).alignment(Alignment::Center);
+            let p = Paragraph::new(text)
+                .alignment(Alignment::Center)
+                .style(Style::default().fg(color));
             f.render_widget(p, area);
             return;
         }
@@ -62,11 +64,11 @@ impl App {
         // Render scaled glyphs
         for base_row in 0..base_h {
             let row_str = self.get_row_string(base_row, &text_chars);
-            
+
             // Each base row is repeated 'scale' times vertically
             for s_row in 0..scale {
                 let y_pos = area.y + ((offset_y + base_row * scale + s_row) as u16);
-                
+
                 // To scale horizontally, we need to repeat each character in row_str 'scale' times
                 let mut scaled_row_str = String::with_capacity(row_str.len() * scale);
                 for c in row_str.chars() {
@@ -75,11 +77,12 @@ impl App {
                     }
                 }
 
-                let p = Paragraph::new(scaled_row_str.as_str()).alignment(Alignment::Center);
+                let x_offset = (area.width as usize - scaled_w) / 2;
+                let p = Paragraph::new(scaled_row_str.as_str()).style(Style::default().fg(color));
                 let line_rect = Rect {
-                    x: area.x,
+                    x: area.x + (x_offset as u16),
                     y: y_pos,
-                    width: area.width,
+                    width: scaled_w as u16,
                     height: 1,
                 };
                 f.render_widget(p, line_rect);
@@ -115,25 +118,20 @@ impl App {
         loop {
             terminal.draw(|f| {
                 let size = f.size();
-                
+
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
-                    .constraints([
-                        Constraint::Percentage(80),
-                        Constraint::Percentage(20),
-                    ])
+                    .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                     .split(size);
 
                 let now = Local::now();
                 let time_str = now.format("%I:%M:%S %p").to_string();
                 let date_str = now.format("%A, %B %d, %Y").to_string();
 
-                self.render_large_text(f, chunks[0], &time_str);
-                
-                let date_p = Paragraph::new(date_str)
-                    .alignment(Alignment::Center)
-                    .style(Style::default().fg(Color::Yellow));
-                f.render_widget(date_p, chunks[1]);
+                self.render_large_text(f, chunks[0], &time_str, Color::White);
+
+                // Render date using large text as well, but potentially smaller scale
+                self.render_large_text(f, chunks[1], &date_str, Color::Yellow);
             })?;
 
             let timeout = tick_rate
@@ -158,10 +156,7 @@ impl App {
         }
 
         disable_raw_mode()?;
-        execute!(
-            terminal.backend_mut(),
-            LeaveAlternateScreen
-        )?;
+        execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
         Ok(())
     }
 }
