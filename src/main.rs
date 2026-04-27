@@ -39,7 +39,7 @@ impl App {
         let num_chars = text_chars.len();
 
         // Calculate total base dimensions
-        let total_base_w = num_chars * base_w;
+        let total_base_w = num_chars * base_w + (num_chars.saturating_sub(1));
         let total_base_h = base_h;
 
         // Scaling factor: how many times we can multiply the base font to fit the area
@@ -89,11 +89,14 @@ impl App {
 
     fn get_row_string(&self, row: usize, text_chars: &[char]) -> String {
         let mut line = String::new();
-        for c in text_chars {
+        for (i, c) in text_chars.iter().enumerate() {
             if let Some(glyph) = self.font.get_glyph(*c) {
                 line.push_str(&glyph[row]);
             } else {
                 line.push_str("     ");
+            }
+            if i < text_chars.len() - 1 {
+                line.push(' ');
             }
         }
         line
