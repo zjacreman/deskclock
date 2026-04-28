@@ -281,7 +281,7 @@ impl App {
                         }
 
                         let end_time_str = if self.timer.is_running {
-                            let end = Instant::now() + self.timer.remaining();
+                            let _end = Instant::now() + self.timer.remaining();
                             // We can't easily convert Instant to Local time without using something like chrono::Utc::now() + Duration
                             // But we can approximate:
                             let now_local = Local::now();
