@@ -52,26 +52,29 @@ When in Stopwatch Mode, you have the following controls:
 
 ## 🛠️ Installation & Building
 
-### Prerequisites
-- [Rust](https://www.rust-lang.org/tools/install) and `cargo` installed on your system.
+The repo ships two implementations with the same feature set:
 
-### Build and Run
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd deskclock
-   ```
+### Rust (terminal)
 
-2. Run the application directly:
-   ```bash
-   cargo run
-   ```
+Prerequisites: [Rust](https://www.rust-lang.org/tools/install) and `cargo`.
 
-3. To build a release version for maximum performance:
-   ```bash
-   cargo build --release
-   ./target/release/deskclock
-   ```
+```bash
+cargo run                 # development run
+cargo build --release     # optimized build
+./target/release/deskclock
+```
+
+### Emacs plugin (`deskclock.el`)
+
+Requires Emacs 30.1+.
+
+```elisp
+(add-to-list 'load-path "/path/to/deskclock")
+(require 'deskclock)
+;; M-x deskclock
+```
+
+Or load it ad-hoc: `M-x load-file RET /path/to/deskclock/deskclock.el RET` then `M-x deskclock`. The buffer redraws every 200 ms and adopts the same keybindings as the terminal version.
 
 ## 🏗️ Architecture
 - **Scaling Engine**: Uses a custom 5x5 grid-based font system. It calculates a scale factor based on the terminal's `Rect` dimensions to repeat base glyph characters horizontally and vertically.
