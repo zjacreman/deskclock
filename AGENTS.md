@@ -21,10 +21,11 @@ The most critical part of the application is how it handles "large" numbers in a
     - It repeats each character in the row string `scale` times horizontally.
     - A single-cell spacer is added between glyphs to prevent blending.
 - **Fallback**: If the terminal is too small to display even the base 1x scale, it falls back to a standard `ratatui::widgets::Paragraph`.
+### 3. Core Components
 
 #### UI Layout
 The screen is divided vertically using `ratatui::layout::Layout`:
-- **Top Section (70%)**: Reserved for the scaled Time display (`HH:MM:SS AM/PM`) or Countdown Timer.
+- **Top Section (70%)**: Reserved for the scaled Time display (`HH:MM:SS AM/PM`), Countdown Timer, or Stopwatch.
 - **Middle Section (20%)**: Reserved for the Date display (`Weekday, Month Day, Year`) or the Countdown Timer's end time.
 - **Bottom Section (10%)**: Reserved for a dynamic command menu that displays available keys based on the current mode and state.
 
@@ -45,6 +46,7 @@ The screen is divided vertically using `ratatui::layout::Layout`:
 - **Changing Layout**: The layout constraints are located in the `terminal.draw` closure in `src/main.rs`.
 - **Scaling Improvements**: Current scaling is integer-based. For smoother transitions, consider implementing sub-pixel-like approximations or different font tiers.
 - **Countdown Timer**: Implemented in `src/main.rs` via `CountdownTimer` struct. Note the distinction between 'paused' (Light Blue, blinking) and 'stopped' (White, static) states. The timer uses `initial_duration` to allow resetting to the last started value.
+- **Stopwatch**: Implemented in `src/main.rs` via `Stopwatch` struct. The stopwatch is rendered in Pink (`Color::Magenta`) and blinks when paused (with non-zero elapsed time). The timer state persists across mode switches.
 
 ## Dependencies
 - `ratatui`: TUI framework.

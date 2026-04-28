@@ -23,6 +23,59 @@ use font::LargeFont;
 enum AppMode {
     Time,
     Countdown,
+    Stopwatch,
+}
+
+struct Stopwatch {
+    elapsed_time: Duration,
+    last_start_time: Option<Instant>,
+    is_running: bool,
+}
+
+impl Stopwatch {
+    fn new() -> Self {
+        Self {
+            elapsed_time: Duration::ZERO,
+            last_start_time: None,
+            is_running: false,
+        }
+    }
+
+    fn start(&mut self) {
+        if !self.is_running {
+            self.is_running = true;
+            self.last_start_time = Some(Instant::now());
+        }
+    }
+
+    fn pause(&mut self) {
+        if self.is_running {
+            if let Some(start_time) = self.last_start_time {
+                let elapsed_since_start = start_time.elapsed();
+                self.elapsed_time += elapsed_since_start;
+            }
+            self.is_running = false;
+            self.last_start_time = None;
+        }
+    }
+
+    fn reset(&mut self) {
+        self.elapsed_time = Duration::ZERO;
+        self.last_start_time = None;
+        self.is_running = false;
+    }
+
+    fn current_elapsed(&self) -> Duration {
+        if self.is_running {
+            if let Some(start_time) = self.last_start_time {
+                self.elapsed_time + start_time.elapsed()
+            } else {
+                self.elapsed_time
+            }
+        } else {
+            self.elapsed_time
+        }
+    }
 }
 
 struct CountdownTimer {
@@ -115,6 +168,7 @@ struct App {
     font: LargeFont,
     mode: AppMode,
     timer: CountdownTimer,
+    stopwatch: Stopwatch,
     flash_start_time: Option<Instant>,
 }
 
@@ -125,6 +179,7 @@ impl App {
             font: LargeFont::new(),
             mode: AppMode::Time,
             timer: CountdownTimer::new(),
+            stopwatch: Stopwatch::new(),
             flash_start_time: None,
         }
     }
@@ -298,15 +353,54 @@ impl App {
                             .style(Style::default().fg(Color::Gray));
                         f.render_widget(p, chunks[1]);
                     }
+                    AppMode::Stopwatch => {
+                        let elapsed = self.stopwatch.current_elapsed();
+                        let h = elapsed.as_secs() / 3600;
+                        let m = (elapsed.as_secs() % 3600) / 60;
+                        let s = elapsed.as_secs() % 60;
+                        let timer_str = format!("{:02}:{:02}:{:02}", h, m, s);
+
+                        let color = if self.stopwatch.is_running {
+                            Color::Magenta
+                        } else {
+                            Color::White
+                        };
+
+                        let is_visible = if self.stopwatch.is_running {
+                            true
+                        } else if !self.stopwatch.is_running
+                            && self.stopwatch.elapsed_time > Duration::ZERO
+                        {
+                            (Local::now().timestamp_millis() / 500) % 2 == 0
+                        } else {
+                            true
+                        };
+
+                        if is_visible {
+                            self.render_large_text(f, chunks[0], &timer_str, color);
+                        }
+
+                        let p = Paragraph::new("Stopwatch")
+                            .alignment(Alignment::Center)
+                            .style(Style::default().fg(Color::Gray));
+                        f.render_widget(p, chunks[1]);
+                    }
                 }
 
                 let cmd_text = match self.mode {
-                    AppMode::Time => "q: Quit | c: Countdown",
+                    AppMode::Time => "q: Quit | c: Countdown | s: Stopwatch",
                     AppMode::Countdown => {
                         if self.timer.is_running {
-                            "q: Quit | t: Time | Space: Pause | r: Reset"
+                            "q: Quit | t: Time | s: Stopwatch | Space: Pause | r: Reset"
                         } else {
-                            "q: Quit | t: Time | Space: Start | r: Reset | ↑↓: Min | ←→: Sec"
+                            "q: Quit | t: Time | s: Stopwatch | Space: Start | r: Reset | ↑↓: Min | ←→: Sec"
+                        }
+                    }
+                    AppMode::Stopwatch => {
+                        if self.stopwatch.is_running {
+                            "q: Quit | t: Time | c: Countdown | Space: Pause | r: Reset"
+                        } else {
+                            "q: Quit | t: Time | c: Countdown | Space: Start | r: Reset"
                         }
                     }
                 };
@@ -327,14 +421,29 @@ impl App {
                         KeyCode::Char('q') => self.should_quit = true,
                         KeyCode::Char('c') => self.mode = AppMode::Countdown,
                         KeyCode::Char('t') => self.mode = AppMode::Time,
-                        KeyCode::Char('r') => self.timer.reset(),
-                        KeyCode::Char(' ') => {
-                            if self.timer.is_running {
-                                self.timer.pause();
-                            } else {
-                                self.timer.start();
+                        KeyCode::Char('s') => self.mode = AppMode::Stopwatch,
+                        KeyCode::Char('r') => match self.mode {
+                            AppMode::Countdown => self.timer.reset(),
+                            AppMode::Stopwatch => self.stopwatch.reset(),
+                            _ => {}
+                        },
+                        KeyCode::Char(' ') => match self.mode {
+                            AppMode::Countdown => {
+                                if self.timer.is_running {
+                                    self.timer.pause();
+                                } else {
+                                    self.timer.start();
+                                }
                             }
-                        }
+                            AppMode::Stopwatch => {
+                                if self.stopwatch.is_running {
+                                    self.stopwatch.pause();
+                                } else {
+                                    self.stopwatch.start();
+                                }
+                            }
+                            _ => {}
+                        },
                         KeyCode::Up => self.timer.adjust_minutes(1),
                         KeyCode::Down => self.timer.adjust_minutes(-1),
                         KeyCode::Left => self.timer.adjust_seconds(-1),
