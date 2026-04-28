@@ -19,9 +19,103 @@ use std::{
 mod font;
 use font::LargeFont;
 
+#[derive(PartialEq)]
+enum AppMode {
+    Time,
+    Countdown,
+}
+
+struct CountdownTimer {
+    duration: Duration,
+    initial_duration: Duration,
+    end_time: Option<Instant>,
+    is_running: bool,
+    is_paused: bool,
+}
+
+impl CountdownTimer {
+    fn new() -> Self {
+        let default_dur = Duration::from_secs(25 * 60);
+        Self {
+            duration: default_dur,
+            initial_duration: default_dur,
+            end_time: None,
+            is_running: false,
+            is_paused: false,
+        }
+    }
+
+    fn remaining(&self) -> Duration {
+        if let Some(end) = self.end_time {
+            end.saturating_duration_since(Instant::now())
+        } else {
+            self.duration
+        }
+    }
+
+    fn start(&mut self) {
+        if !self.is_running {
+            if self.duration > Duration::ZERO {
+                self.initial_duration = self.duration;
+            }
+            self.end_time = Some(Instant::now() + self.remaining());
+            self.is_running = true;
+            self.is_paused = false;
+        }
+    }
+
+    fn pause(&mut self) {
+        if self.is_running {
+            self.duration = self.remaining();
+            self.end_time = None;
+            self.is_running = false;
+            self.is_paused = true;
+        }
+    }
+
+    fn reset(&mut self) {
+        self.end_time = None;
+        self.is_running = false;
+        self.is_paused = false;
+        self.duration = self.initial_duration;
+    }
+
+    fn finish(&mut self) {
+        self.duration = Duration::ZERO;
+        self.end_time = None;
+        self.is_running = false;
+        self.is_paused = true;
+    }
+
+    fn adjust_minutes(&mut self, delta: i32) {
+        self.stop();
+        let secs = self.duration.as_secs() as i64 + (delta as i64 * 60);
+        self.duration = Duration::from_secs(secs.max(0) as u64);
+    }
+
+    fn adjust_seconds(&mut self, delta: i32) {
+        self.stop();
+        let secs = self.duration.as_secs() as i64 + (delta as i64);
+        self.duration = Duration::from_secs(secs.max(0) as u64);
+    }
+
+    fn stop(&mut self) {
+        self.end_time = None;
+        self.is_running = false;
+        self.is_paused = false;
+    }
+
+    fn is_finished(&self) -> bool {
+        self.is_running && self.remaining().as_secs() == 0
+    }
+}
+
 struct App {
     should_quit: bool,
     font: LargeFont,
+    mode: AppMode,
+    timer: CountdownTimer,
+    flash_start_time: Option<Instant>,
 }
 
 impl App {
@@ -29,6 +123,9 @@ impl App {
         Self {
             should_quit: false,
             font: LargeFont::new(),
+            mode: AppMode::Time,
+            timer: CountdownTimer::new(),
+            flash_start_time: None,
         }
     }
 
@@ -119,19 +216,85 @@ impl App {
             terminal.draw(|f| {
                 let size = f.size();
 
+                if let Some(start) = self.flash_start_time {
+                    let elapsed = start.elapsed().as_millis();
+                    if elapsed < 1250 {
+                        if (elapsed / 250) % 2 == 0 {
+                            f.render_widget(
+                                Paragraph::new("").style(Style::default().bg(Color::Red)),
+                                size,
+                            );
+                        }
+                    } else {
+                        self.flash_start_time = None;
+                    }
+                }
+
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
                     .split(size);
 
-                let now = Local::now();
-                let time_str = now.format("%I:%M:%S %p").to_string();
-                let date_str = now.format("%A, %B %d, %Y").to_string();
+                match self.mode {
+                    AppMode::Time => {
+                        let now = Local::now();
+                        let time_str = now.format("%I:%M:%S %p").to_string();
+                        let date_str = now.format("%A, %B %d, %Y").to_string();
 
-                self.render_large_text(f, chunks[0], &time_str, Color::White);
+                        self.render_large_text(f, chunks[0], &time_str, Color::White);
+                        self.render_large_text(f, chunks[1], &date_str, Color::Yellow);
+                    }
+                    AppMode::Countdown => {
+                        let rem = self.timer.remaining();
+                        let h = rem.as_secs() / 3600;
+                        let m = (rem.as_secs() % 3600) / 60;
+                        let s = rem.as_secs() % 60;
+                        let timer_str = if h > 0 {
+                            format!("{:02}:{:02}:{:02}", h, m, s)
+                        } else {
+                            format!("{:02}:{:02}", m, s)
+                        };
 
-                // Render date using large text as well, but potentially smaller scale
-                self.render_large_text(f, chunks[1], &date_str, Color::Yellow);
+                        let is_paused = self.timer.is_paused;
+                        let is_running = self.timer.is_running;
+
+                        let color = if is_running || is_paused {
+                            Color::Cyan
+                        } else {
+                            Color::White
+                        };
+
+                        let is_visible = if is_running {
+                            true
+                        } else if is_paused {
+                            (Local::now().timestamp_millis() / 500) % 2 == 0
+                        } else {
+                            true
+                        };
+
+                        if is_visible {
+                            self.render_large_text(f, chunks[0], &timer_str, color);
+                        }
+
+                        let end_time_str = if self.timer.is_running {
+                            let end = Instant::now() + self.timer.remaining();
+                            // We can't easily convert Instant to Local time without using something like chrono::Utc::now() + Duration
+                            // But we can approximate:
+                            let now_local = Local::now();
+                            let end_local = now_local
+                                + chrono::Duration::from_std(self.timer.remaining())
+                                    .unwrap_or(chrono::Duration::zero());
+                            format!("Ends at: {}", end_local.format("%I:%M:%S %p").to_string())
+                        } else {
+                            "Paused".to_string()
+                        };
+
+                        let p = Paragraph::new(end_time_str)
+                            .alignment(Alignment::Center)
+                            .style(Style::default().fg(Color::Gray));
+                        f.render_widget(p, chunks[1]);
+                    }
+                }
             })?;
 
             let timeout = tick_rate
@@ -140,14 +303,33 @@ impl App {
 
             if event::poll(timeout)? {
                 if let Event::Key(key) = event::read()? {
-                    if key.code == KeyCode::Char('q') {
-                        self.should_quit = true;
+                    match key.code {
+                        KeyCode::Char('q') => self.should_quit = true,
+                        KeyCode::Char('c') => self.mode = AppMode::Countdown,
+                        KeyCode::Char('t') => self.mode = AppMode::Time,
+                        KeyCode::Char('r') => self.timer.reset(),
+                        KeyCode::Char(' ') => {
+                            if self.timer.is_running {
+                                self.timer.pause();
+                            } else {
+                                self.timer.start();
+                            }
+                        }
+                        KeyCode::Up => self.timer.adjust_minutes(1),
+                        KeyCode::Down => self.timer.adjust_minutes(-1),
+                        KeyCode::Left => self.timer.adjust_seconds(-1),
+                        KeyCode::Right => self.timer.adjust_seconds(1),
+                        _ => {}
                     }
                 }
             }
 
             if last_tick.elapsed() >= tick_rate {
                 last_tick = Instant::now();
+                if self.timer.is_finished() {
+                    self.flash_start_time = Some(Instant::now());
+                    self.timer.finish();
+                }
             }
 
             if self.should_quit {

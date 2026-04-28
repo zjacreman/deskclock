@@ -24,18 +24,26 @@ The most critical part of the application is how it handles "large" numbers in a
 
 #### UI Layout
 The screen is divided vertically using `ratatui::layout::Layout`:
-- **Top Section (80%)**: Reserved for the scaled Time display (`HH:MM:SS AM/PM`).
-- **Bottom Section (20%)**: Reserved for the Date display (`Weekday, Month Day, Year`).
+- **Top Section (80%)**: Reserved for the scaled Time display (`HH:MM:SS AM/PM`) or Countdown Timer.
+- **Bottom Section (20%)**: Reserved for the Date display (`Weekday, Month Day, Year`) or the Countdown Timer's end time.
 
 ### 3. Event Loop
-- **Tick Rate**: Sets a refresh interval (approx 200ms) to keep the clock seconds accurate.
-- **Input**: Listens for the `q` key to trigger a graceful shutdown.
+- **Tick Rate**: Sets a refresh interval (approx 200ms) to keep the clock seconds accurate and handle UI animations (blinking, flashing).
+- **Input**:
+    - `q`: Graceful shutdown.
+    - `t`: Switch to Time mode.
+    - `c`: Switch to Countdown mode.
+    - `Space`: Start/Pause timer.
+    - `r`: Reset timer to session start value.
+    - `Up`/`Down`: Adjust timer minutes.
+    - `Left`/`Right`: Adjust timer seconds.
 - **Responsiveness**: Layout and scaling are re-calculated on every frame, making the app naturally responsive to terminal resize events.
 
 ## Development Notes for Future Agents
 - **Adding Glyphs**: To add new characters (e.g., for a 24h clock or different symbols), add them to the `HashMap` in `src/font.rs` as `Vec<String>` with exactly 5 elements of 5 characters each.
 - **Changing Layout**: The layout constraints are located in the `terminal.draw` closure in `src/main.rs`.
 - **Scaling Improvements**: Current scaling is integer-based. For smoother transitions, consider implementing sub-pixel-like approximations or different font tiers.
+- **Countdown Timer**: Implemented in `src/main.rs` via `CountdownTimer` struct. Note the distinction between 'paused' (Light Blue, blinking) and 'stopped' (White, static) states. The timer uses `initial_duration` to allow resetting to the last started value.
 
 ## Dependencies
 - `ratatui`: TUI framework.
