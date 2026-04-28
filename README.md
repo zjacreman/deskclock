@@ -11,7 +11,9 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
   - **Stopwatch**: A precise timing tool with start/pause/reset functionality.
 - **Visual Feedback**:
   - **Blinking**: The timer blinks when paused to notify you that it is not actively counting down.
-  - **Color Shifting**: The display shifts to Light Blue when the timer is active.
+  - **Color Shifting**: 
+    - The Countdown Timer shifts to **Light Blue** when active.
+    - The Stopwatch shifts to **Pink** when running.
   - **Termination Alert**: The terminal window flashes red when the countdown reaches zero.
 - **Responsive Design**: Layout and scaling are re-calculated on every frame, making it perfectly responsive to terminal resize events.
 

@@ -35,6 +35,7 @@ The screen is divided vertically using `ratatui::layout::Layout`:
     - `q`: Graceful shutdown.
     - `t`: Switch to Time mode.
     - `c`: Switch to Countdown mode.
+    - `s`: Switch to Stopwatch mode.
     - `Space`: Start/Pause timer.
     - `r`: Reset timer to session start value.
     - `Up`/`Down`: Adjust timer minutes.
