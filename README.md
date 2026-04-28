@@ -8,6 +8,7 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
 - **Dual Modes**:
   - **Clock Mode**: Displays the current time (`HH:MM:SS AM/PM`) and date.
   - **Countdown Timer**: A fully featured timer for productivity (e.g., Pomodoro) with custom durations.
+  - **Stopwatch**: A precise timing tool with start/pause/reset functionality.
 - **Visual Feedback**:
   - **Blinking**: The timer blinks when paused to notify you that it is not actively counting down.
   - **Color Shifting**: The display shifts to Light Blue when the timer is active.
@@ -22,6 +23,7 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
 | `q` | Quit application |
 | `t` | Switch to **Clock Mode** |
 | `c` | Switch to **Countdown Mode** |
+| `s` | Switch to **Stopwatch Mode** |
 
 ### ⏲️ Countdown Timer Controls
 When in Countdown Mode, you have additional controls to manage your session:
@@ -37,6 +39,14 @@ When in Countdown Mode, you have additional controls to manage your session:
 - **Running**: Display is Light Blue.
 - **Paused**: Display is Light Blue and blinks.
 - **Stopped/Reset**: Display is White.
+
+### ⏱️ Stopwatch Controls
+When in Stopwatch Mode, you have the following controls:
+
+| Key | Action |
+| :--- | :--- |
+| `Space` | Start / Pause the stopwatch |
+| `r` | Reset stopwatch to zero |
 
 ## 🛠️ Installation & Building
 
