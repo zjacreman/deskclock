@@ -24,12 +24,13 @@ The most critical part of the application is how it handles "large" numbers in a
 
 #### UI Layout
 The screen is divided vertically using `ratatui::layout::Layout`:
-- **Top Section (80%)**: Reserved for the scaled Time display (`HH:MM:SS AM/PM`) or Countdown Timer.
-- **Bottom Section (20%)**: Reserved for the Date display (`Weekday, Month Day, Year`) or the Countdown Timer's end time.
+- **Top Section (70%)**: Reserved for the scaled Time display (`HH:MM:SS AM/PM`) or Countdown Timer.
+- **Middle Section (20%)**: Reserved for the Date display (`Weekday, Month Day, Year`) or the Countdown Timer's end time.
+- **Bottom Section (10%)**: Reserved for a dynamic command menu that displays available keys based on the current mode and state.
 
 ### 3. Event Loop
 - **Tick Rate**: Sets a refresh interval (approx 200ms) to keep the clock seconds accurate and handle UI animations (blinking, flashing).
-- **Input**:
+- **Input**: Available commands are displayed in the bottom menu and vary by mode:
     - `q`: Graceful shutdown.
     - `t`: Switch to Time mode.
     - `c`: Switch to Countdown mode.

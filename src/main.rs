@@ -232,7 +232,11 @@ impl App {
 
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
-                    .constraints([Constraint::Percentage(80), Constraint::Percentage(20)])
+                    .constraints([
+                        Constraint::Percentage(70),
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(10),
+                    ])
                     .split(size);
 
                 match self.mode {
@@ -295,6 +299,22 @@ impl App {
                         f.render_widget(p, chunks[1]);
                     }
                 }
+
+                let cmd_text = match self.mode {
+                    AppMode::Time => "q: Quit | c: Countdown",
+                    AppMode::Countdown => {
+                        if self.timer.is_running {
+                            "q: Quit | t: Time | Space: Pause | r: Reset"
+                        } else {
+                            "q: Quit | t: Time | Space: Start | r: Reset | ↑↓: Min | ←→: Sec"
+                        }
+                    }
+                };
+
+                let cmd_p = Paragraph::new(cmd_text)
+                    .alignment(Alignment::Center)
+                    .style(Style::default().fg(Color::DarkGray));
+                f.render_widget(cmd_p, chunks[2]);
             })?;
 
             let timeout = tick_rate
