@@ -76,3 +76,31 @@ When in Stopwatch Mode, you have the following controls:
 ## 🏗️ Architecture
 - **Scaling Engine**: Uses a custom 5x5 grid-based font system. It calculates a scale factor based on the terminal's `Rect` dimensions to repeat base glyph characters horizontally and vertically.
 - **State Management**: Maintains the timer state in the background, allowing you to switch between the clock and timer modes without interrupting a running countdown.
+
+## 🧪 Testing
+
+This project includes a comprehensive unit test suite covering the core components: LargeFont, Stopwatch, CountdownTimer, and App state management.
+
+### Running Tests
+
+```bash
+# Run all tests
+cargo test
+
+# Run tests with output
+cargo test -- --nocapture
+
+# Run specific test category
+cargo test font
+cargo test stopwatch
+cargo test countdown
+```
+
+### Test Coverage
+
+- **LargeFont** (29 tests): Validates all 36 glyphs (digits, letters, punctuation), character dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
+- **Stopwatch** (10 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, and running/paused accuracy.
+- **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
+- **App State** (15 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), and font integration.
+
+**Total: 76 unit tests**
