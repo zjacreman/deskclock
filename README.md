@@ -8,7 +8,7 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
 - **Dual Modes**:
   - **Clock Mode**: Displays the current time (`HH:MM:SS AM/PM` or `HH:MM:SS`) and date.
   - **Countdown Timer**: A fully featured timer for productivity (e.g., Pomodoro) with custom durations.
-  - **Stopwatch**: A precise timing tool with start/pause/reset functionality.
+  - **Stopwatch**: A precise timing tool with start/pause/reset functionality and centisecond subsecond precision (under 1 hour).
 - **Visual Feedback**:
   - **Blinking**: The timer blinks when paused to notify you that it is not actively counting down.
   - **Color Shifting**: 
@@ -51,6 +51,10 @@ When in Stopwatch Mode, you have the following controls:
 | :--- | :--- |
 | `Space` | Start / Pause the stopwatch |
 | `r` | Reset stopwatch to zero |
+
+### Stopwatch Display Formats
+- **Under 1 hour**: `MM:SS.cs` (minutes, seconds, centiseconds)
+- **1 hour or more**: `HH:MM:SS` (hours, minutes, seconds) — the dot separator cannot fit all six values in the terminal width
 
 ## 🛠️ Installation & Building
 
@@ -100,10 +104,10 @@ cargo test countdown
 
 ### Test Coverage
 
-- **LargeFont** (29 tests): Validates all 36 glyphs (digits, letters, punctuation), character dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
+- **LargeFont** (30 tests): Validates all 37 glyphs (digits, letters, punctuation including `.`, all glyph dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
 - **Stopwatch** (10 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, and running/paused accuracy.
 - **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
 - **App State** (20 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
 - **Notification** (16 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
 
-**Total: 97 unit tests**
+**Total: 98 unit tests**

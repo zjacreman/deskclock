@@ -68,13 +68,13 @@ cargo test countdown
 
 ### Test Coverage
 
-- **LargeFont** (29 tests): Validates all 36 glyphs (digits, letters, punctuation), character dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
+- **LargeFont** (30 tests): Validates all 37 glyphs (digits, letters, punctuation including `.`, all glyph dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
 - **Stopwatch** (10 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, and running/paused accuracy.
 - **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
 - **App State** (20 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
 - **Notification** (16 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
 
-**Total: 97 unit tests**
+**Total: 98 unit tests**
 
 ## Development Notes for Future Agents
 
@@ -107,6 +107,10 @@ To inject a `MockNotifier` for testing, use `app.with_notifier(Box::new(MockNoti
 
 ### Stopwatch Implementation Notes
 Implemented in `src/stopwatch.rs` via the `Stopwatch` struct. The stopwatch is rendered in Pink (`Color::Magenta`) and blinks when paused (with non-zero elapsed time). The timer state persists across mode switches.
+
+The stopwatch displays subsecond (centisecond) precision. When the elapsed time is under 1 hour, the format is `MM:SS.cs` (minutes, seconds, centiseconds). When at or over 1 hour, it switches to `HH:MM:SS` (hours, minutes, seconds) since the terminal width cannot fit all six values plus the dot separator.
+
+The `.` (dot) glyph was added to `src/font.rs` to serve as the subsecond separator, with a corresponding `test_dot_glyph_content` test.
 
 ## Dependencies
 - `ratatui`: TUI framework.

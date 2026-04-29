@@ -27,6 +27,7 @@ impl LargeFont {
         add(':', vec!["     ", "  █  ", "     ", "  █  ", "     "]);
         add(' ', vec!["     ", "     ", "     ", "     ", "     "]);
         add(',', vec!["     ", "     ", "     ", " █   ", " █   "]);
+        add('.', vec!["     ", "     ", "     ", "     ", "  █  "]);
 
         // Uppercase Alphabet
         add('A', vec![" ███ ", "█   █", " ███ ", "█   █", "█   █"]);
@@ -312,6 +313,18 @@ mod tests {
     }
 
     #[test]
+    fn test_dot_glyph_content() {
+        let font = LargeFont::new();
+        let glyph = font.get_glyph('.').unwrap();
+        assert_eq!(glyph.len(), 5, "Dot glyph should have 5 rows");
+        assert_eq!(glyph[0], "     ", "First row should be empty");
+        assert_eq!(glyph[1], "     ", "Second row should be empty");
+        assert_eq!(glyph[2], "     ", "Third row should be empty");
+        assert_eq!(glyph[3], "     ", "Fourth row should be empty");
+        assert_eq!(glyph[4], "  █  ", "Fifth row should have the dot");
+    }
+
+    #[test]
     fn test_a_glyph_content() {
         let font = LargeFont::new();
         let glyph = font.get_glyph('A').unwrap();
@@ -397,10 +410,11 @@ mod tests {
         for c in '0'..='9' {
             all_chars.push(c);
         }
-        // Add colon, space, comma
+        // Add colon, space, comma, dot
         all_chars.push(':');
         all_chars.push(' ');
         all_chars.push(',');
+        all_chars.push('.');
         // Add all uppercase letters
         for c in 'A'..='Z' {
             all_chars.push(c);
@@ -436,6 +450,7 @@ mod tests {
         all_chars.push(':');
         all_chars.push(' ');
         all_chars.push(',');
+        all_chars.push('.');
         for c in 'A'..='Z' {
             all_chars.push(c);
         }

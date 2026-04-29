@@ -170,10 +170,17 @@ impl App {
                     }
                     AppMode::Stopwatch => {
                         let elapsed = self.stopwatch.current_elapsed();
-                        let h = elapsed.as_secs() / 3600;
-                        let m = (elapsed.as_secs() % 3600) / 60;
-                        let s = elapsed.as_secs() % 60;
-                        let timer_str = format!("{:02}:{:02}:{:02}", h, m, s);
+                        let total_secs = elapsed.as_secs();
+                        let h = total_secs / 3600;
+                        let m = (total_secs % 3600) / 60;
+                        let s = total_secs % 60;
+                        let cs = (elapsed.subsec_millis()) / 10;
+
+                        let timer_str = if h > 0 {
+                            format!("{:02}:{:02}:{:02}", h, m, s)
+                        } else {
+                            format!("{:02}:{:02}.{:02}", m, s, cs)
+                        };
 
                         let color = if self.stopwatch.is_running {
                             Color::Magenta
