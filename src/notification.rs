@@ -15,6 +15,35 @@ impl SystemNotifier {
     }
 }
 
+#[cfg(target_os = "macos")]
+impl Notifier for SystemNotifier {
+    fn send_notification(&mut self, title: &str, body: &str) {
+        if !self.enabled {
+            return;
+        }
+
+        let escaped_title = title
+            .replace('\\', "\\\\")
+            .replace('"', "\\\"")
+            .replace('`', "\\`")
+            .replace('\n', "\\n");
+        let escaped_body = body
+            .replace('\\', "\\\\")
+            .replace('"', "\\\"")
+            .replace('`', "\\`")
+            .replace('\n', "\\n");
+
+        let _ = std::process::Command::new("osascript")
+            .arg("-e")
+            .arg(format!(
+                "display notification \"{}\" with title \"{}\"",
+                escaped_body, escaped_title
+            ))
+            .output();
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
 impl Notifier for SystemNotifier {
     fn send_notification(&mut self, title: &str, body: &str) {
         if !self.enabled {

@@ -7,5 +7,6 @@ edition = "2024"
 ratatui = "0.26"
 crossterm = "0.27"
 chrono = "0.4"
-notify-rust = "4.16"
 
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+notify-rust = "4.16"

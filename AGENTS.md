@@ -7,7 +7,7 @@ This is a Rust-based terminal application that displays a large, scaling digital
 ### 1. File Structure
 - `src/main.rs`: The main entry point and application logic. It handles the event loop and coordinates between the state and UI.
 - `src/font.rs`: Defines the `LargeFont` system. It contains a map of characters (0-9, :, A, P, M, etc.) represented as 5x5 grids of block characters (`█`).
-- `src/notification.rs`: Defines the `Notifier` trait and concrete implementations (`SystemNotifier` using `notify-rust`, `MockNotifier` for testing) that send desktop notifications when the countdown timer completes.
+- `src/notification.rs`: Defines the `Notifier` trait and concrete implementations (`SystemNotifier` — uses `osascript` on macOS via `cfg(target_os = "macos")`, `notify-rust` on Linux/Windows, `MockNotifier` for testing) that send desktop notifications when the countdown timer completes.
 - `src/timer.rs`: Contains the `CountdownTimer` logic and state management.
 - `src/stopwatch.rs`: Contains the `Stopwatch` logic and state management.
 - `src/ui.rs`: Contains the scaling rendering engine and layout definitions.
@@ -101,7 +101,7 @@ Implemented in `src/timer.rs` via the `CountdownTimer` struct. Note the distinct
 
 When the countdown timer finishes, it triggers two notifications:
 1. A **red screen flash** (terminal-only visual alert lasting ~1.25 seconds)
-2. A **native OS desktop notification** via `notify-rust` with title "Countdown Timer Complete" and body "00:00 - Timer has finished"
+2. A **native OS desktop notification** — uses `osascript display notification` on macOS, `notify-rust` on Linux/Windows — with title "Countdown Timer Complete" and body "00:00 - Timer has finished"
 
 To inject a `MockNotifier` for testing, use `app.with_notifier(Box::new(MockNotifier::new()))`.
 
@@ -112,4 +112,4 @@ Implemented in `src/stopwatch.rs` via the `Stopwatch` struct. The stopwatch is r
 - `ratatui`: TUI framework.
 - `crossterm`: Terminal backend and event handling.
 - `chrono`: Time and date formatting.
-- `notify-rust`: Native OS desktop notifications for timer completion alerts.
+- `notify-rust` (Linux/Windows only): Native OS desktop notifications for timer completion alerts. macOS uses a native `osascript` call instead (see `notification.rs` for `cfg(target_os = "macos")` implementation).
