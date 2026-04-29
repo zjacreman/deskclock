@@ -24,7 +24,7 @@ impl LargeFont {
         add('7', vec![" ███ ", "    █", "    █", "    █", "    █"]);
         add('8', vec![" ███ ", "█   █", " ███ ", "█   █", " ███ "]);
         add('9', vec![" ███ ", "█   █", " ███ ", "    █", " ███ "]);
-        add(':', vec!["  █  ", "     ", "  █  ", "     ", "  █  "]);
+        add(':', vec!["     ", "  █  ", "     ", "  █  ", "     "]);
         add(' ', vec!["     ", "     ", "     ", "     ", "     "]);
         add(',', vec!["     ", "     ", "     ", " █   ", " █   "]);
 
@@ -32,7 +32,7 @@ impl LargeFont {
         add('A', vec![" ███ ", "█   █", " ███ ", "█   █", "█   █"]);
         add('B', vec![" ███ ", "█   █", " ███ ", "█   █", " ███ "]);
         add('C', vec![" ███ ", "█    ", "█    ", "█    ", " ███ "]);
-        add('D', vec!["█████", "█   █", "█   █", "█   █", "█████"]);
+        add('D', vec!["████ ", "█   █", "█   █", "█   █", "████ "]);
         add('E', vec![" ███ ", "█    ", " ███ ", "█    ", " ███ "]);
         add('F', vec![" ███ ", "█    ", " ███ ", "█    ", "█    "]);
         add('G', vec![" ███ ", "█    ", " ███ ", "█   █", " ███ "]);
@@ -282,11 +282,11 @@ mod tests {
         let font = LargeFont::new();
         let glyph = font.get_glyph(':').unwrap();
         assert_eq!(glyph.len(), 5, "Colon glyph should have 5 rows");
-        assert_eq!(glyph[0], "  █  ", "First row should have top dot");
-        assert_eq!(glyph[1], "     ", "Second row should be empty");
-        assert_eq!(glyph[2], "  █  ", "Third row should have middle dot");
-        assert_eq!(glyph[3], "     ", "Fourth row should be empty");
-        assert_eq!(glyph[4], "  █  ", "Fifth row should have bottom dot");
+        assert_eq!(glyph[0], "     ", "First row should be empty");
+        assert_eq!(glyph[1], "  █  ", "Second row should have top dot");
+        assert_eq!(glyph[2], "     ", "Third row should be empty");
+        assert_eq!(glyph[3], "  █  ", "Fourth row should have bottom dot");
+        assert_eq!(glyph[4], "     ", "Fifth row should be empty");
     }
 
     #[test]
@@ -352,11 +352,17 @@ mod tests {
         let font = LargeFont::new();
         let glyph = font.get_glyph('D').unwrap();
         assert_eq!(glyph.len(), 5, "D glyph should have 5 rows");
-        assert_eq!(glyph[0], "█████", "First row should be almost full");
+        assert_eq!(
+            glyph[0], "████ ",
+            "First row should have rounded upper right corner"
+        );
         assert_eq!(glyph[1], "█   █", "Second row should have side bars");
         assert_eq!(glyph[2], "█   █", "Third row should have side bars");
         assert_eq!(glyph[3], "█   █", "Fourth row should have side bars");
-        assert_eq!(glyph[4], "█████", "Fifth row should be almost full");
+        assert_eq!(
+            glyph[4], "████ ",
+            "Fifth row should have rounded lower right corner"
+        );
     }
 
     #[test]
