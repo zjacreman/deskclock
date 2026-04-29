@@ -169,6 +169,7 @@ struct App {
     mode: AppMode,
     timer: CountdownTimer,
     stopwatch: Stopwatch,
+    use_24h_format: bool,
     flash_start_time: Option<Instant>,
 }
 
@@ -180,6 +181,7 @@ impl App {
             mode: AppMode::Time,
             timer: CountdownTimer::new(),
             stopwatch: Stopwatch::new(),
+            use_24h_format: false,
             flash_start_time: None,
         }
     }
@@ -307,7 +309,8 @@ impl App {
                 match self.mode {
                     AppMode::Time => {
                         let now = Local::now();
-                        let time_str = now.format("%I:%M:%S %p").to_string();
+                        let time_fmt = if self.use_24h_format { "%H:%M:%S" } else { "%I:%M:%S %p" };
+                        let time_str = now.format(time_fmt).to_string();
                         let date_str = now.format("%A, %B %d, %Y").to_string();
 
                         self.render_large_text(f, chunks[0], &time_str, Color::White);
@@ -398,7 +401,7 @@ impl App {
                 }
 
                 let cmd_text = match self.mode {
-                    AppMode::Time => "q: Quit | c: Countdown | s: Stopwatch",
+                    AppMode::Time => "q: Quit | c: Countdown | s: Stopwatch | h: 12/24h",
                     AppMode::Countdown => {
                         if self.timer.is_running {
                             "q: Quit | t: Time | s: Stopwatch | Space: Pause | r: Reset"
@@ -431,6 +434,7 @@ impl App {
                         KeyCode::Char('q') => self.should_quit = true,
                         KeyCode::Char('c') => self.mode = AppMode::Countdown,
                         KeyCode::Char('t') => self.mode = AppMode::Time,
+                        KeyCode::Char('h') => self.use_24h_format = !self.use_24h_format,
                         KeyCode::Char('s') => self.mode = AppMode::Stopwatch,
                         KeyCode::Char('r') => match self.mode {
                             AppMode::Countdown => self.timer.reset(),
@@ -787,6 +791,16 @@ mod tests {
         assert!(!app.timer.is_running);
         assert!(!app.stopwatch.is_running);
         assert!(app.flash_start_time.is_none());
+    }
+
+    #[test]
+    fn test_app_24h_toggle() {
+        let mut app = App::new();
+        assert!(!app.use_24h_format, "Should default to 12h format");
+        app.use_24h_format = !app.use_24h_format;
+        assert!(app.use_24h_format, "Should toggle to 24h format");
+        app.use_24h_format = !app.use_24h_format;
+        assert!(!app.use_24h_format, "Should toggle back to 12h format");
     }
 
     #[test]

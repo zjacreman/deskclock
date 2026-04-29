@@ -6,7 +6,7 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
 
 - **Adaptive Scaling**: The clock and date automatically scale their size to fill the available terminal area.
 - **Dual Modes**:
-  - **Clock Mode**: Displays the current time (`HH:MM:SS AM/PM`) and date.
+  - **Clock Mode**: Displays the current time (`HH:MM:SS AM/PM` or `HH:MM:SS`) and date.
   - **Countdown Timer**: A fully featured timer for productivity (e.g., Pomodoro) with custom durations.
   - **Stopwatch**: A precise timing tool with start/pause/reset functionality.
 - **Visual Feedback**:
@@ -26,6 +26,7 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
 | `t` | Switch to **Clock Mode** |
 | `c` | Switch to **Countdown Mode** |
 | `s` | Switch to **Stopwatch Mode** |
+| `h` | Toggle 12h/24h clock format |
 
 ### ⏲️ Countdown Timer Controls
 When in Countdown Mode, you have additional controls to manage your session:
@@ -101,6 +102,6 @@ cargo test countdown
 - **LargeFont** (29 tests): Validates all 36 glyphs (digits, letters, punctuation), character dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
 - **Stopwatch** (10 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, and running/paused accuracy.
 - **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
-- **App State** (19 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
+- **App State** (20 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
 
-**Total: 80 unit tests**
+**Total: 81 unit tests**
