@@ -257,6 +257,16 @@ impl App {
         line
     }
 
+    fn handle_arrow_key(&mut self, key: crossterm::event::KeyCode) {
+        match (key, &self.mode) {
+            (crossterm::event::KeyCode::Up, AppMode::Countdown) => self.timer.adjust_minutes(1),
+            (crossterm::event::KeyCode::Down, AppMode::Countdown) => self.timer.adjust_minutes(-1),
+            (crossterm::event::KeyCode::Left, AppMode::Countdown) => self.timer.adjust_seconds(-1),
+            (crossterm::event::KeyCode::Right, AppMode::Countdown) => self.timer.adjust_seconds(1),
+            _ => {}
+        }
+    }
+
     fn run(&mut self) -> Result<(), Box<dyn Error>> {
         enable_raw_mode()?;
         let mut stdout = std::io::stdout();
@@ -444,10 +454,10 @@ impl App {
                             }
                             _ => {}
                         },
-                        KeyCode::Up => self.timer.adjust_minutes(1),
-                        KeyCode::Down => self.timer.adjust_minutes(-1),
-                        KeyCode::Left => self.timer.adjust_seconds(-1),
-                        KeyCode::Right => self.timer.adjust_seconds(1),
+                        KeyCode::Up => self.handle_arrow_key(KeyCode::Up),
+                        KeyCode::Down => self.handle_arrow_key(KeyCode::Down),
+                        KeyCode::Left => self.handle_arrow_key(KeyCode::Left),
+                        KeyCode::Right => self.handle_arrow_key(KeyCode::Right),
                         _ => {}
                     }
                 }
@@ -848,6 +858,75 @@ mod tests {
             app.font.get_glyph(' ').is_some(),
             "Space should have a glyph"
         );
+    }
+
+    // ============================================================
+    // Arrow Key Event Handling Tests
+    // ============================================================
+
+    #[test]
+    fn test_handle_arrow_key_adjusts_timer_in_countdown_mode() {
+        let mut app = App::new();
+        app.mode = AppMode::Countdown;
+        let initial_duration = app.timer.duration;
+
+        app.handle_arrow_key(KeyCode::Up);
+        assert_eq!(
+            app.timer.duration,
+            initial_duration + Duration::from_secs(60)
+        );
+
+        app.handle_arrow_key(KeyCode::Down);
+        assert_eq!(app.timer.duration, initial_duration);
+
+        let current = app.timer.duration;
+        app.handle_arrow_key(KeyCode::Right);
+        assert_eq!(app.timer.duration, current + Duration::from_secs(1));
+
+        app.handle_arrow_key(KeyCode::Left);
+        assert_eq!(app.timer.duration, current);
+    }
+
+    #[test]
+    fn test_handle_arrow_key_does_nothing_in_time_mode() {
+        let mut app = App::new();
+        app.mode = AppMode::Time;
+        let initial_duration = app.timer.duration;
+
+        app.handle_arrow_key(KeyCode::Up);
+        app.handle_arrow_key(KeyCode::Down);
+        app.handle_arrow_key(KeyCode::Left);
+        app.handle_arrow_key(KeyCode::Right);
+
+        assert_eq!(app.timer.duration, initial_duration);
+    }
+
+    #[test]
+    fn test_handle_arrow_key_does_nothing_in_stopwatch_mode() {
+        let mut app = App::new();
+        app.mode = AppMode::Stopwatch;
+        let initial_duration = app.timer.duration;
+
+        app.handle_arrow_key(KeyCode::Up);
+        app.handle_arrow_key(KeyCode::Down);
+        app.handle_arrow_key(KeyCode::Left);
+        app.handle_arrow_key(KeyCode::Right);
+
+        assert_eq!(app.timer.duration, initial_duration);
+    }
+
+    #[test]
+    fn test_handle_arrow_key_does_nothing_with_unknown_key() {
+        let mut app = App::new();
+        app.mode = AppMode::Countdown;
+        let initial_duration = app.timer.duration;
+
+        // Even in Countdown mode, non-arrow keys should do nothing
+        app.handle_arrow_key(KeyCode::Char('x'));
+        app.handle_arrow_key(KeyCode::Char('r'));
+        app.handle_arrow_key(KeyCode::Esc);
+
+        assert_eq!(app.timer.duration, initial_duration);
     }
 
     // ============================================================

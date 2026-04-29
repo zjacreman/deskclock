@@ -101,6 +101,6 @@ cargo test countdown
 - **LargeFont** (29 tests): Validates all 36 glyphs (digits, letters, punctuation), character dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
 - **Stopwatch** (10 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, and running/paused accuracy.
 - **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
-- **App State** (15 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), and font integration.
+- **App State** (19 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
 
-**Total: 76 unit tests**
+**Total: 80 unit tests**
