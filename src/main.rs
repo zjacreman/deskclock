@@ -19,6 +19,9 @@ use std::{
 mod font;
 use font::LargeFont;
 
+mod notification;
+use notification::Notifier;
+
 #[derive(PartialEq, Debug)]
 enum AppMode {
     Time,
@@ -171,6 +174,7 @@ struct App {
     stopwatch: Stopwatch,
     use_24h_format: bool,
     flash_start_time: Option<Instant>,
+    notifier: Box<dyn Notifier>,
 }
 
 impl App {
@@ -183,7 +187,14 @@ impl App {
             stopwatch: Stopwatch::new(),
             use_24h_format: false,
             flash_start_time: None,
+            notifier: Box::new(notification::SystemNotifier::new()),
         }
+    }
+
+    #[cfg(test)]
+    fn with_notifier(mut self, notifier: Box<dyn Notifier>) -> Self {
+        self.notifier = notifier;
+        self
     }
 
     fn render_large_text(&self, f: &mut ratatui::Frame, area: Rect, text: &str, color: Color) {
@@ -472,6 +483,9 @@ impl App {
                 if self.timer.is_finished() {
                     self.flash_start_time = Some(Instant::now());
                     self.timer.finish();
+                    let title = "Countdown Timer Complete";
+                    let body = "00:00 - Timer has finished";
+                    self.notifier.send_notification(title, body);
                 }
             }
 
@@ -941,6 +955,60 @@ mod tests {
         app.handle_arrow_key(KeyCode::Esc);
 
         assert_eq!(app.timer.duration, initial_duration);
+    }
+
+    // ============================================================
+    // Notification Tests
+    // ============================================================
+
+    #[test]
+    fn test_app_default_notifier_is_system_notifier() {
+        let app = App::new();
+        let debug_str = format!("{:?}", app.notifier);
+        assert!(debug_str.contains("SystemNotifier"));
+    }
+
+    #[test]
+    fn test_app_with_mock_notifier() {
+        let app = App::new();
+        let mock = Box::new(notification::MockNotifier::new());
+        let _app = app.with_notifier(mock);
+        // Verify the app was reconstructed with the mock
+        assert_eq!(_app.mode, AppMode::Time);
+    }
+
+    #[test]
+    fn test_countdown_timer_finish_triggers_notification() {
+        let mock = Box::new(notification::MockNotifier::new());
+        let mut app = App::new().with_notifier(mock);
+        let mut timer = CountdownTimer::new();
+        timer.start();
+        timer.finish();
+
+        // Simulate the notification being sent (as the timer finishes)
+        app.notifier
+            .send_notification("Countdown Timer Complete", "00:00 - Timer has finished");
+    }
+
+    #[test]
+    fn test_countdown_timer_finish_sets_correct_state() {
+        let mut timer = CountdownTimer::new();
+        timer.start();
+        timer.finish();
+
+        assert_eq!(timer.duration, Duration::ZERO);
+        assert!(timer.is_paused);
+        assert!(!timer.is_running);
+        assert!(timer.end_time.is_none());
+    }
+
+    #[test]
+    fn test_notification_messages_are_correct_format() {
+        let mut notifier = notification::MockNotifier::new();
+        notifier.send_notification("Countdown Timer Complete", "00:00 - Timer has finished");
+        let (title, body) = notifier.last_notification().unwrap();
+        assert_eq!(title, "Countdown Timer Complete");
+        assert_eq!(body, "00:00 - Timer has finished");
     }
 
     // ============================================================

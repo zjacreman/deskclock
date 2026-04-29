@@ -15,6 +15,7 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
     - The Countdown Timer shifts to **Light Blue** when active.
     - The Stopwatch shifts to **Pink** when running.
   - **Termination Alert**: The terminal window flashes red when the countdown reaches zero.
+  - **Desktop Notification**: A native OS desktop notification is sent with title "Countdown Timer Complete" when the timer finishes.
 - **Responsive Design**: Layout and scaling are re-calculated on every frame, making it perfectly responsive to terminal resize events.
 
 ## 🚀 Usage
@@ -103,5 +104,6 @@ cargo test countdown
 - **Stopwatch** (10 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, and running/paused accuracy.
 - **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
 - **App State** (20 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
+- **Notification** (16 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
 
-**Total: 81 unit tests**
+**Total: 97 unit tests**

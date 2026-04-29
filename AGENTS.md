@@ -5,8 +5,9 @@ This is a Rust-based terminal application that displays a large, scaling digital
 ## Architecture & Layout
 
 ### 1. File Structure
-- `src/main.rs`: The main entry point and application logic. It handles the event loop, TUI layout, and the scaling rendering engine.
+- `src/main.rs`: The main entry point and application logic. It handles the event loop, TUI layout, the scaling rendering engine, and timer finish notifications.
 - `src/font.rs`: Defines the `LargeFont` system. It contains a map of characters (0-9, :, A, P, M, etc.) represented as 5x5 grids of block characters (`█`).
+- `src/notification.rs`: Defines the `Notifier` trait and concrete implementations (`SystemNotifier` using `notify-rust`, `MockNotifier` for testing) that send desktop notifications when the countdown timer completes.
 - `PLAN.md`: The original implementation plan used to develop the project.
 - `Cargo.toml`: Project configuration and dependencies.
 
@@ -67,9 +68,10 @@ cargo test countdown
 - **LargeFont** (29 tests): Validates all 36 glyphs (digits, letters, punctuation), character dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
 - **Stopwatch** (10 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, and running/paused accuracy.
 - **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
-- **App State** (19 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
+- **App State** (20 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
+- **Notification** (16 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
 
-**Total: 80 unit tests**
+**Total: 97 unit tests**
 
 ## Development Notes for Future Agents
 
@@ -81,6 +83,7 @@ To add new characters (e.g., for a 24h clock or different symbols), add them to 
 - **New timer features**: Add tests that verify state transitions and edge cases (e.g., zero durations, negative adjustments).
 - **Stopwatch changes**: Always test time accumulation across multiple pause/resume cycles.
 - **Font changes**: Verify both byte length (`len()`) and character count (`chars().count()`) when dealing with UTF-8 block characters.
+- **Notification features**: Use `MockNotifier` to verify notifications without triggering actual OS calls.
 
 ### Layout Changes
 The layout constraints are located in the `terminal.draw` closure in `src/main.rs`. The three vertical sections use percentage-based constraints (70%, 20%, 10%).
@@ -93,6 +96,12 @@ Implemented in `src/main.rs` via `CountdownTimer` struct. Note the distinction b
 
 **Important**: Calling `start()` updates `initial_duration` to the current duration. If you need to preserve the original initial duration, call `start()` only once or manually save it before calling `start()`.
 
+When the countdown timer finishes, it triggers two notifications:
+1. A **red screen flash** (terminal-only visual alert lasting ~1.25 seconds)
+2. A **native OS desktop notification** via `notify-rust` with title "Countdown Timer Complete" and body "00:00 - Timer has finished"
+
+To inject a `MockNotifier` for testing, use `app.with_notifier(Box::new(MockNotifier::new()))`.
+
 ### Stopwatch Implementation Notes
 Implemented in `src/main.rs` via `Stopwatch` struct. The stopwatch is rendered in Pink (`Color::Magenta`) and blinks when paused (with non-zero elapsed time). The timer state persists across mode switches.
 
@@ -100,3 +109,4 @@ Implemented in `src/main.rs` via `Stopwatch` struct. The stopwatch is rendered i
 - `ratatui`: TUI framework.
 - `crossterm`: Terminal backend and event handling.
 - `chrono`: Time and date formatting.
+- `notify-rust`: Native OS desktop notifications for timer completion alerts.
