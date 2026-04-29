@@ -5,15 +5,18 @@ This is a Rust-based terminal application that displays a large, scaling digital
 ## Architecture & Layout
 
 ### 1. File Structure
-- `src/main.rs`: The main entry point and application logic. It handles the event loop, TUI layout, the scaling rendering engine, and timer finish notifications.
+- `src/main.rs`: The main entry point and application logic. It handles the event loop and coordinates between the state and UI.
 - `src/font.rs`: Defines the `LargeFont` system. It contains a map of characters (0-9, :, A, P, M, etc.) represented as 5x5 grids of block characters (`█`).
 - `src/notification.rs`: Defines the `Notifier` trait and concrete implementations (`SystemNotifier` using `notify-rust`, `MockNotifier` for testing) that send desktop notifications when the countdown timer completes.
+- `src/timer.rs`: Contains the `CountdownTimer` logic and state management.
+- `src/stopwatch.rs`: Contains the `Stopwatch` logic and state management.
+- `src/ui.rs`: Contains the scaling rendering engine and layout definitions.
 - `PLAN.md`: The original implementation plan used to develop the project.
 - `Cargo.toml`: Project configuration and dependencies.
 
 ### 2. Core Components
 
-#### Scaling Rendering Engine (`src/main.rs` -> `render_large_text`)
+#### Scaling Rendering Engine (`src/ui.rs` -> `render_large_text`)
 The most critical part of the application is how it handles "large" numbers in a grid-based terminal:
 - **Base Glyphs**: Every character is defined as a 5x5 grid in `src/font.rs`.
 - **Scaling Logic**: The engine calculates a `scale` factor by dividing the available terminal area by the total base width/height of the string to be rendered.
@@ -86,13 +89,13 @@ To add new characters (e.g., for a 24h clock or different symbols), add them to 
 - **Notification features**: Use `MockNotifier` to verify notifications without triggering actual OS calls.
 
 ### Layout Changes
-The layout constraints are located in the `terminal.draw` closure in `src/main.rs`. The three vertical sections use percentage-based constraints (70%, 20%, 10%).
+The layout constraints are defined in `src/ui.rs` via the `create_main_layout` function. The three vertical sections use percentage-based constraints (70%, 20%, 10%).
 
 ### Scaling Improvements
 Current scaling is integer-based. For smoother transitions, consider implementing sub-pixel-like approximations or different font tiers.
 
 ### Countdown Timer Implementation Notes
-Implemented in `src/main.rs` via `CountdownTimer` struct. Note the distinction between 'paused' (Light Blue, blinking) and 'stopped' (White, static) states. The timer uses `initial_duration` to allow resetting to the last started value.
+Implemented in `src/timer.rs` via the `CountdownTimer` struct. Note the distinction between 'paused' (Light Blue, blinking) and 'stopped' (White, static) states. The timer uses `initial_duration` to allow resetting to the last started value.
 
 **Important**: Calling `start()` updates `initial_duration` to the current duration. If you need to preserve the original initial duration, call `start()` only once or manually save it before calling `start()`.
 
@@ -103,7 +106,7 @@ When the countdown timer finishes, it triggers two notifications:
 To inject a `MockNotifier` for testing, use `app.with_notifier(Box::new(MockNotifier::new()))`.
 
 ### Stopwatch Implementation Notes
-Implemented in `src/main.rs` via `Stopwatch` struct. The stopwatch is rendered in Pink (`Color::Magenta`) and blinks when paused (with non-zero elapsed time). The timer state persists across mode switches.
+Implemented in `src/stopwatch.rs` via the `Stopwatch` struct. The stopwatch is rendered in Pink (`Color::Magenta`) and blinks when paused (with non-zero elapsed time). The timer state persists across mode switches.
 
 ## Dependencies
 - `ratatui`: TUI framework.

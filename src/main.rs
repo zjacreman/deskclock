@@ -7,7 +7,7 @@ use crossterm::{
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::Alignment,
     style::{Color, Style},
     widgets::Paragraph,
 };
@@ -22,148 +22,19 @@ use font::LargeFont;
 mod notification;
 use notification::Notifier;
 
+mod stopwatch;
+use stopwatch::Stopwatch;
+
+mod timer;
+use timer::CountdownTimer;
+
+mod ui;
+
 #[derive(PartialEq, Debug)]
 enum AppMode {
     Time,
     Countdown,
     Stopwatch,
-}
-
-struct Stopwatch {
-    elapsed_time: Duration,
-    last_start_time: Option<Instant>,
-    is_running: bool,
-}
-
-impl Stopwatch {
-    fn new() -> Self {
-        Self {
-            elapsed_time: Duration::ZERO,
-            last_start_time: None,
-            is_running: false,
-        }
-    }
-
-    fn start(&mut self) {
-        if !self.is_running {
-            self.is_running = true;
-            self.last_start_time = Some(Instant::now());
-        }
-    }
-
-    fn pause(&mut self) {
-        if self.is_running {
-            if let Some(start_time) = self.last_start_time {
-                let elapsed_since_start = start_time.elapsed();
-                self.elapsed_time += elapsed_since_start;
-            }
-            self.is_running = false;
-            self.last_start_time = None;
-        }
-    }
-
-    fn reset(&mut self) {
-        self.elapsed_time = Duration::ZERO;
-        self.last_start_time = None;
-        self.is_running = false;
-    }
-
-    fn current_elapsed(&self) -> Duration {
-        if self.is_running {
-            if let Some(start_time) = self.last_start_time {
-                self.elapsed_time + start_time.elapsed()
-            } else {
-                self.elapsed_time
-            }
-        } else {
-            self.elapsed_time
-        }
-    }
-}
-
-struct CountdownTimer {
-    duration: Duration,
-    initial_duration: Duration,
-    end_time: Option<Instant>,
-    is_running: bool,
-    is_paused: bool,
-}
-
-impl CountdownTimer {
-    fn new() -> Self {
-        let default_dur = Duration::from_secs(25 * 60);
-        Self {
-            duration: default_dur,
-            initial_duration: default_dur,
-            end_time: None,
-            is_running: false,
-            is_paused: false,
-        }
-    }
-
-    fn remaining(&self) -> Duration {
-        if let Some(end) = self.end_time {
-            end.saturating_duration_since(Instant::now())
-        } else {
-            self.duration
-        }
-    }
-
-    fn start(&mut self) {
-        if !self.is_running {
-            if self.duration > Duration::ZERO {
-                self.initial_duration = self.duration;
-            }
-            self.end_time = Some(Instant::now() + self.remaining());
-            self.is_running = true;
-            self.is_paused = false;
-        }
-    }
-
-    fn pause(&mut self) {
-        if self.is_running {
-            self.duration = self.remaining();
-            self.end_time = None;
-            self.is_running = false;
-            self.is_paused = true;
-        }
-    }
-
-    fn reset(&mut self) {
-        self.end_time = None;
-        self.is_running = false;
-        self.is_paused = false;
-        self.duration = self.initial_duration;
-    }
-
-    fn finish(&mut self) {
-        self.duration = Duration::ZERO;
-        self.end_time = None;
-        self.is_running = false;
-        self.is_paused = true;
-    }
-
-    fn adjust_minutes(&mut self, delta: i32) {
-        self.stop();
-        let secs = self.duration.as_secs() as i64 + (delta as i64 * 60);
-        self.duration = Duration::from_secs(secs.max(0) as u64);
-    }
-
-    fn adjust_seconds(&mut self, delta: i32) {
-        self.stop();
-        let secs = self.duration.as_secs() as i64 + (delta as i64);
-        self.duration = Duration::from_secs(secs.max(0) as u64);
-    }
-
-    fn stop(&mut self) {
-        self.end_time = None;
-        self.is_running = false;
-        self.is_paused = false;
-    }
-
-    fn is_finished(&self) -> bool {
-        self.is_running && self.remaining().as_secs() == 0
-    }
 }
 
 struct App {
@@ -195,79 +66,6 @@ impl App {
     fn with_notifier(mut self, notifier: Box<dyn Notifier>) -> Self {
         self.notifier = notifier;
         self
-    }
-
-    fn render_large_text(&self, f: &mut ratatui::Frame, area: Rect, text: &str, color: Color) {
-        let base_w = self.font.glyph_width() as usize;
-        let base_h = self.font.glyph_height() as usize;
-        let text_chars: Vec<char> = text.chars().collect();
-        let num_chars = text_chars.len();
-
-        // Calculate total base dimensions
-        let total_base_w = num_chars * base_w + (num_chars.saturating_sub(1));
-        let total_base_h = base_h;
-
-        // Scaling factor: how many times we can multiply the base font to fit the area
-        let scale_w = (area.width as usize) / total_base_w;
-        let scale_h = (area.height as usize) / total_base_h;
-        let scale = scale_w.min(scale_h).max(1);
-
-        let scaled_w = total_base_w * scale;
-        let scaled_h = total_base_h * scale;
-
-        // If it doesn't fit even at scale 1, fallback to normal text
-        if scaled_w > area.width as usize || scaled_h > area.height as usize {
-            let p = Paragraph::new(text)
-                .alignment(Alignment::Center)
-                .style(Style::default().fg(color));
-            f.render_widget(p, area);
-            return;
-        }
-
-        let offset_y = (area.height as usize - scaled_h) / 2;
-
-        // Render scaled glyphs
-        for base_row in 0..base_h {
-            let row_str = self.get_row_string(base_row, &text_chars);
-
-            // Each base row is repeated 'scale' times vertically
-            for s_row in 0..scale {
-                let y_pos = area.y + ((offset_y + base_row * scale + s_row) as u16);
-
-                // To scale horizontally, we need to repeat each character in row_str 'scale' times
-                let mut scaled_row_str = String::with_capacity(row_str.len() * scale);
-                for c in row_str.chars() {
-                    for _ in 0..scale {
-                        scaled_row_str.push(c);
-                    }
-                }
-
-                let x_offset = (area.width as usize - scaled_w) / 2;
-                let p = Paragraph::new(scaled_row_str.as_str()).style(Style::default().fg(color));
-                let line_rect = Rect {
-                    x: area.x + (x_offset as u16),
-                    y: y_pos,
-                    width: scaled_w as u16,
-                    height: 1,
-                };
-                f.render_widget(p, line_rect);
-            }
-        }
-    }
-
-    fn get_row_string(&self, row: usize, text_chars: &[char]) -> String {
-        let mut line = String::new();
-        for (i, c) in text_chars.iter().enumerate() {
-            if let Some(glyph) = self.font.get_glyph(*c) {
-                line.push_str(&glyph[row]);
-            } else {
-                line.push_str("     ");
-            }
-            if i < text_chars.len() - 1 {
-                line.push(' ');
-            }
-        }
-        line
     }
 
     fn handle_arrow_key(&mut self, key: crossterm::event::KeyCode) {
@@ -308,14 +106,7 @@ impl App {
                     }
                 }
 
-                let chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .constraints([
-                        Constraint::Percentage(70),
-                        Constraint::Percentage(20),
-                        Constraint::Percentage(10),
-                    ])
-                    .split(size);
+                let chunks = ui::create_main_layout(size);
 
                 match self.mode {
                     AppMode::Time => {
@@ -324,8 +115,8 @@ impl App {
                         let time_str = now.format(time_fmt).to_string();
                         let date_str = now.format("%A, %B %d, %Y").to_string();
 
-                        self.render_large_text(f, chunks[0], &time_str, Color::White);
-                        self.render_large_text(f, chunks[1], &date_str, Color::Yellow);
+                        ui::render_large_text(f, chunks[0], &time_str, Color::White, &self.font);
+                        ui::render_large_text(f, chunks[1], &date_str, Color::Yellow, &self.font);
                     }
                     AppMode::Countdown => {
                         let rem = self.timer.remaining();
@@ -356,7 +147,7 @@ impl App {
                         };
 
                         if is_visible {
-                            self.render_large_text(f, chunks[0], &timer_str, color);
+                            ui::render_large_text(f, chunks[0], &timer_str, color, &self.font);
                         }
 
                         let end_time_str = if self.timer.is_running {
@@ -401,7 +192,7 @@ impl App {
                         };
 
                         if is_visible {
-                            self.render_large_text(f, chunks[0], &timer_str, color);
+                            ui::render_large_text(f, chunks[0], &timer_str, color, &self.font);
                         }
 
                         let p = Paragraph::new("Stopwatch")
