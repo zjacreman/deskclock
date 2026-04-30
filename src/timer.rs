@@ -9,8 +9,8 @@ pub struct CountdownTimer {
 }
 
 impl CountdownTimer {
-    pub fn new() -> Self {
-        let default_dur = Duration::from_secs(25 * 60);
+    pub fn with_duration(secs: u64) -> Self {
+        let default_dur = Duration::from_secs(secs);
         Self {
             duration: default_dur,
             initial_duration: default_dur,

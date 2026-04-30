@@ -8,7 +8,7 @@ use ratatui::{
     Terminal,
     backend::CrosstermBackend,
     layout::Alignment,
-    style::{Color, Style},
+    style::Style,
     widgets::Paragraph,
 };
 use std::{
@@ -30,6 +30,9 @@ use timer::CountdownTimer;
 
 mod ui;
 
+mod config;
+use config::{AppConfig, DefaultMode};
+
 #[derive(PartialEq, Debug)]
 enum AppMode {
     Time,
@@ -46,19 +49,29 @@ struct App {
     use_24h_format: bool,
     flash_start_time: Option<Instant>,
     notifier: Box<dyn Notifier>,
+    config: AppConfig,
 }
 
 impl App {
     fn new() -> Self {
+        let config = AppConfig::load();
+        let mode = match config.default_mode {
+            DefaultMode::Time => AppMode::Time,
+            DefaultMode::Countdown => AppMode::Countdown,
+            DefaultMode::Stopwatch => AppMode::Stopwatch,
+        };
+        let timer = CountdownTimer::with_duration(config.countdown_default_seconds);
+
         Self {
             should_quit: false,
             font: LargeFont::new(),
-            mode: AppMode::Time,
-            timer: CountdownTimer::new(),
+            mode,
+            timer,
             stopwatch: Stopwatch::new(),
-            use_24h_format: false,
+            use_24h_format: config.use_24h_format,
             flash_start_time: None,
             notifier: Box::new(notification::SystemNotifier::new()),
+            config,
         }
     }
 
@@ -97,7 +110,7 @@ impl App {
                     if elapsed < 1250 {
                         if (elapsed / 250) % 2 == 0 {
                             f.render_widget(
-                                Paragraph::new("").style(Style::default().bg(Color::Red)),
+                                Paragraph::new("").style(Style::default().bg(self.config.colors.alert_color)),
                                 size,
                             );
                         }
@@ -115,8 +128,8 @@ impl App {
                         let time_str = now.format(time_fmt).to_string();
                         let date_str = now.format("%A, %B %d, %Y").to_string();
 
-                        ui::render_large_text(f, chunks[0], &time_str, Color::White, &self.font);
-                        ui::render_large_text(f, chunks[1], &date_str, Color::Yellow, &self.font);
+                        ui::render_large_text(f, chunks[0], &time_str, self.config.colors.time_color, &self.font);
+                        ui::render_large_text(f, chunks[1], &date_str, self.config.colors.date_color, &self.font);
                     }
                     AppMode::Countdown => {
                         let rem = self.timer.remaining();
@@ -133,9 +146,9 @@ impl App {
                         let is_running = self.timer.is_running;
 
                         let color = if is_running || is_paused {
-                            Color::Cyan
+                            self.config.colors.countdown_running_color
                         } else {
-                            Color::White
+                            self.config.colors.countdown_idle_color
                         };
 
                         let is_visible = if is_running {
@@ -165,7 +178,7 @@ impl App {
 
                         let p = Paragraph::new(end_time_str)
                             .alignment(Alignment::Center)
-                            .style(Style::default().fg(Color::Gray));
+                            .style(Style::default().fg(self.config.colors.menu_color));
                         f.render_widget(p, chunks[1]);
                     }
                     AppMode::Stopwatch => {
@@ -183,9 +196,9 @@ impl App {
                         };
 
                         let color = if self.stopwatch.is_running {
-                            Color::Magenta
+                            self.config.colors.stopwatch_running_color
                         } else {
-                            Color::White
+                            self.config.colors.stopwatch_idle_color
                         };
 
                         let is_visible = if self.stopwatch.is_running {
@@ -204,7 +217,7 @@ impl App {
 
                         let p = Paragraph::new("Stopwatch")
                             .alignment(Alignment::Center)
-                            .style(Style::default().fg(Color::Gray));
+                            .style(Style::default().fg(self.config.colors.menu_color));
                         f.render_widget(p, chunks[1]);
                     }
                 }
@@ -229,7 +242,7 @@ impl App {
 
                 let cmd_p = Paragraph::new(cmd_text)
                     .alignment(Alignment::Center)
-                    .style(Style::default().fg(Color::DarkGray));
+                    .style(Style::default().fg(self.config.colors.menu_color));
                 f.render_widget(cmd_p, chunks[2]);
             })?;
 
@@ -421,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_new_has_default_25_minutes() {
-        let timer = CountdownTimer::new();
+        let timer = CountdownTimer::with_duration(25 * 60);
         assert_eq!(timer.duration, Duration::from_secs(25 * 60));
         assert_eq!(timer.initial_duration, Duration::from_secs(25 * 60));
         assert!(timer.end_time.is_none());
@@ -431,13 +444,13 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_remaining_when_not_running() {
-        let timer = CountdownTimer::new();
+        let timer = CountdownTimer::with_duration(25 * 60);
         assert_eq!(timer.remaining(), Duration::from_secs(25 * 60));
     }
 
     #[test]
     fn test_countdown_timer_start() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         assert!(!timer.is_running);
         timer.start();
         assert!(timer.is_running);
@@ -447,7 +460,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_start_when_already_running_does_nothing() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.start();
         let _end_time = timer.end_time.unwrap();
         std::thread::sleep(Duration::from_millis(10));
@@ -458,7 +471,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_pause_while_not_running_does_nothing() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.pause();
         assert!(!timer.is_running);
         assert!(!timer.is_paused);
@@ -467,7 +480,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_pause_sets_paused_flag() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.start();
         std::thread::sleep(Duration::from_millis(50));
         timer.pause();
@@ -478,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_pause_saves_remaining_duration() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         // Set a custom duration
         timer.duration = Duration::from_secs(100);
         timer.start();
@@ -492,7 +505,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_reset_restores_initial_duration() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         let initial = timer.initial_duration;
         // Modify duration without calling start() (which would update initial_duration)
         timer.duration = Duration::from_secs(10);
@@ -508,7 +521,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_finish_sets_zero_duration() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.start();
         timer.finish();
         assert_eq!(timer.duration, Duration::ZERO);
@@ -519,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_adjust_minutes_positive() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         let initial = timer.duration;
         timer.adjust_minutes(5);
         assert_eq!(timer.duration, initial + Duration::from_secs(300));
@@ -527,7 +540,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_adjust_minutes_negative() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         let initial = timer.duration;
         timer.adjust_minutes(-1);
         assert_eq!(timer.duration, initial - Duration::from_secs(60));
@@ -535,7 +548,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_adjust_minutes_does_not_go_below_zero() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.duration = Duration::from_secs(30);
         timer.adjust_minutes(-10); // Should try to subtract 600 seconds
         assert!(timer.duration >= Duration::ZERO);
@@ -543,7 +556,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_adjust_seconds_positive() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         let initial = timer.duration;
         timer.adjust_seconds(30);
         assert_eq!(timer.duration, initial + Duration::from_secs(30));
@@ -551,7 +564,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_adjust_seconds_negative() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         let initial = timer.duration;
         timer.adjust_seconds(-10);
         assert_eq!(timer.duration, initial - Duration::from_secs(10));
@@ -559,7 +572,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_adjust_seconds_does_not_go_below_zero() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.duration = Duration::from_secs(5);
         timer.adjust_seconds(-10); // Should try to subtract 10 seconds
         assert!(timer.duration >= Duration::ZERO);
@@ -567,7 +580,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_stop_clears_running_state() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.start();
         timer.stop();
         assert!(!timer.is_running);
@@ -577,7 +590,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_is_finished_while_running() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.duration = Duration::ZERO;
         timer.start();
         // With zero duration, remaining() will be ZERO
@@ -587,7 +600,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_is_finished_when_not_running() {
-        let timer = CountdownTimer::new();
+        let timer = CountdownTimer::with_duration(25 * 60);
         assert!(!timer.is_finished());
     }
 
@@ -608,11 +621,11 @@ mod tests {
     #[test]
     fn test_app_24h_toggle() {
         let mut app = App::new();
-        assert!(!app.use_24h_format, "Should default to 12h format");
+        let initial = app.use_24h_format;
         app.use_24h_format = !app.use_24h_format;
-        assert!(app.use_24h_format, "Should toggle to 24h format");
+        assert_ne!(app.use_24h_format, initial, "Should toggle to the opposite format");
         app.use_24h_format = !app.use_24h_format;
-        assert!(!app.use_24h_format, "Should toggle back to 12h format");
+        assert_eq!(app.use_24h_format, initial, "Should toggle back to the original format");
     }
 
     #[test]
@@ -779,7 +792,7 @@ mod tests {
     fn test_countdown_timer_finish_triggers_notification() {
         let mock = Box::new(notification::MockNotifier::new());
         let mut app = App::new().with_notifier(mock);
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.start();
         timer.finish();
 
@@ -790,7 +803,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_finish_sets_correct_state() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.start();
         timer.finish();
 
@@ -847,14 +860,14 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_remaining_with_zero_duration() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.duration = Duration::ZERO;
         assert_eq!(timer.remaining(), Duration::ZERO);
     }
 
     #[test]
     fn test_countdown_timer_start_with_zero_duration_sets_running_but_remaining_is_zero() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         timer.duration = Duration::ZERO;
         timer.start();
         // start() sets is_running = true regardless of duration,
@@ -865,7 +878,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_adjust_minutes_with_no_running_state() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         let initial = timer.duration;
         timer.adjust_minutes(10);
         assert_eq!(timer.duration, initial + Duration::from_secs(600));
@@ -873,7 +886,7 @@ mod tests {
 
     #[test]
     fn test_countdown_timer_adjust_seconds_with_no_running_state() {
-        let mut timer = CountdownTimer::new();
+        let mut timer = CountdownTimer::with_duration(25 * 60);
         let initial = timer.duration;
         timer.adjust_seconds(45);
         assert_eq!(timer.duration, initial + Duration::from_secs(45));
@@ -924,5 +937,27 @@ mod tests {
                 );
             }
         }
+    }
+
+    // ========== Color From Str Tests ========
+
+    #[test]
+    fn test_color_from_str_colors() {
+        assert_eq!(
+            config::color_from_str("Red"),
+            ratatui::style::Color::Red
+        );
+        assert_eq!(
+            config::color_from_str("#FF5733"),
+            ratatui::style::Color::Rgb(255, 87, 51)
+        );
+        assert_eq!(
+            config::color_from_str("rgb(10, 20, 30)"),
+            ratatui::style::Color::Rgb(10, 20, 30)
+        );
+        assert_eq!(
+            config::color_from_str("Cyan"),
+            ratatui::style::Color::Cyan
+        );
     }
 }

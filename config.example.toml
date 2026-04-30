@@ -1,0 +1,43 @@
+# Deskclock Configuration File
+# Copy this file to one of these locations (checked in order):
+#   1. ./config.toml (in the app's working directory)
+#   2. ~/.config/deskclock/config.toml (or platform equivalent)
+#
+# Only customize the options you want to change.
+# Any missing options will use the defaults listed in the comments.
+
+# ──────────────────────
+# Color choices
+# ──────────────────────
+# Use a named color: White, Black, Red, Green, Yellow, Blue,
+#   Magenta, Pink, Cyan, Gray/Grey, DarkGray/DarkGrey,
+#   LightRed, LightGreen, LightYellow, LightBlue,
+#   LightMagenta/LightPink, LightCyan
+# Or hex: #RRGGBB
+# Or RGB: rgb(R, G, B)
+
+time_color = "White"     # Time display color
+date_color = "Yellow"    # Date display color
+countdown_running_color = "Cyan"   # Timer when running/paused
+countdown_idle_color = "White"     # Timer when stopped
+stopwatch_running_color = "Magenta" # Stopwatch when running
+stopwatch_idle_color = "White"     # Stopwatch when stopped
+menu_color = "DarkGray"  # Bottom command line
+alert_color = "Red"      # Flash on timer complete
+
+# ──────────────────────
+# Timer settings
+# ──────────────────────
+
+# Initial countdown timer duration in seconds (default: 1500 = 25 minutes)
+countdown_default_seconds = 1500
+
+# ──────────────────────
+# Display settings
+# ──────────────────────
+
+# Clock format: false = 12-hour (1:00 PM), true = 24-hour (13:00)
+use_24h_format = false
+
+# Startup mode: "time", "countdown", or "stopwatch"
+default_mode = "time"
