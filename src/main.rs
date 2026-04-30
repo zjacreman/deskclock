@@ -215,10 +215,22 @@ impl App {
                             ui::render_large_text(f, chunks[0], &timer_str, color, &self.font);
                         }
 
-                        let p = Paragraph::new("Stopwatch")
-                            .alignment(Alignment::Center)
-                            .style(Style::default().fg(self.config.colors.menu_color));
-                        f.render_widget(p, chunks[1]);
+                        if self.stopwatch.last_lap_elapsed().is_some() {
+                            let lap = self.stopwatch.last_lap_elapsed().unwrap();
+                            let lap_secs = lap.as_secs();
+                            let lm = (lap_secs % 3600) / 60;
+                            let ls = lap_secs % 60;
+                            let lcs = (lap.subsec_millis()) / 10;
+
+                            let lap_display = format!("{:02}:{:02}.{:02}", lm, ls, lcs);
+
+                            ui::render_large_text(f, chunks[1], &lap_display, self.config.colors.stopwatch_lap_color, &self.font);
+                        } else {
+                            let p = Paragraph::new("Stopwatch")
+                                .alignment(Alignment::Center)
+                                .style(Style::default().fg(self.config.colors.menu_color));
+                            f.render_widget(p, chunks[1]);
+                        }
                     }
                 }
 
@@ -233,9 +245,9 @@ impl App {
                     }
                     AppMode::Stopwatch => {
                         if self.stopwatch.is_running {
-                            "q: Quit | t: Time | c: Countdown | Space: Pause | r: Reset"
+                            "q: Quit | t: Time | c: Countdown | Space: Pause | r: Reset | l: Lap"
                         } else {
-                            "q: Quit | t: Time | c: Countdown | Space: Start | r: Reset"
+                            "q: Quit | t: Time | c: Countdown | Space: Start | r: Reset | l: Lap"
                         }
                     }
                 };
@@ -258,6 +270,12 @@ impl App {
                         KeyCode::Char('t') => self.mode = AppMode::Time,
                         KeyCode::Char('h') => self.use_24h_format = !self.use_24h_format,
                         KeyCode::Char('s') => self.mode = AppMode::Stopwatch,
+                        KeyCode::Char('l') => {
+                            if let AppMode::Stopwatch = &self.mode {
+                                let lap_time = self.stopwatch.current_elapsed();
+                                self.stopwatch.add_lap(lap_time);
+                            }
+                        }
                         KeyCode::Char('r') => match self.mode {
                             AppMode::Countdown => self.timer.reset(),
                             AppMode::Stopwatch => self.stopwatch.reset(),

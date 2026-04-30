@@ -45,6 +45,7 @@ The screen is divided vertically using `ratatui::layout::Layout`:
     - `r`: Reset timer to session start value.
     - `Up`/`Down`: Adjust timer minutes (Countdown mode only).
     - `Left`/`Right`: Adjust timer seconds (Countdown mode only).
+    - `l`: Record lap time (Stopwatch mode only).
 - **Responsiveness**: Layout and scaling are re-calculated on every frame, making the app naturally responsive to terminal resize events.
 
 ## Testing
@@ -69,12 +70,12 @@ cargo test countdown
 ### Test Coverage
 
 - **LargeFont** (30 tests): Validates all 37 glyphs (digits, letters, punctuation including `.`, all glyph dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
-- **Stopwatch** (10 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, and running/paused accuracy.
+- **Stopwatch** (16 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, lap recording, lap reset behavior, and ensuring laps don't affect running state.
 - **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
 - **App State** (20 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
 - **Notification** (16 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
 
-**Total: 98 unit tests**
+**Total: 111 unit tests**
 
 ## Development Notes for Future Agents
 
@@ -85,6 +86,7 @@ To add new characters (e.g., for a 24h clock or different symbols), add them to 
 - **New glyphs**: Add corresponding glyph content tests to verify the 5x5 structure and character composition.
 - **New timer features**: Add tests that verify state transitions and edge cases (e.g., zero durations, negative adjustments).
 - **Stopwatch changes**: Always test time accumulation across multiple pause/resume cycles.
+- **New lap feature**: Test that `add_lap()` saves the lap, overwrites any previous lap, and `reset()` clears it — verify lap recording doesn't affect running state or elapsed time.
 - **Font changes**: Verify both byte length (`len()`) and character count (`chars().count()`) when dealing with UTF-8 block characters.
 - **Notification features**: Use `MockNotifier` to verify notifications without triggering actual OS calls.
 
@@ -111,6 +113,18 @@ Implemented in `src/stopwatch.rs` via the `Stopwatch` struct. The stopwatch is r
 The stopwatch displays subsecond (centisecond) precision. When the elapsed time is under 1 hour, the format is `MM:SS.cs` (minutes, seconds, centiseconds). When at or over 1 hour, it switches to `HH:MM:SS` (hours, minutes, seconds) since the terminal width cannot fit all six values plus the dot separator.
 
 The `.` (dot) glyph was added to `src/font.rs` to serve as the subsecond separator, with a corresponding `test_dot_glyph_content` test.
+
+#### Lap Feature
+The stopwatch supports a single lap via pressing `l` in Stopwatch mode. The lap time is saved as `Duration` and displayed in the secondary display (middle section, scaled with the same large font) using the configurable `stopwatch_lap_color` (default `Blue`). Pressing `l` again overwrites the previous lap. Reset (`r`) clears the lap. No lap set shows "Stopwatch" text in the secondary display instead.
+
+The lap key press is gated to Stopwatch mode — pressing `l` in any other mode does nothing.
+
+## Configuration
+Lap color can be customized in your config file:
+
+```toml
+stopwatch_lap_color = "Cyan"
+```
 
 ## Dependencies
 - `ratatui`: TUI framework.

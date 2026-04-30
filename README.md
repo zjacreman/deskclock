@@ -50,11 +50,15 @@ When in Stopwatch Mode, you have the following controls:
 | Key | Action |
 | :--- | :--- |
 | `Space` | Start / Pause the stopwatch |
-| `r` | Reset stopwatch to zero |
+| `r` | Reset stopwatch to zero and clear lap |
+| `l` | Record lap time (displayed in the secondary display) |
 
 ### Stopwatch Display Formats
 - **Under 1 hour**: `MM:SS.cs` (minutes, seconds, centiseconds)
 - **1 hour or more**: `HH:MM:SS` (hours, minutes, seconds) — the dot separator cannot fit all six values in the terminal width
+
+### Lap Times
+The current lap time is shown in the secondary (middle) display in the configured lap color (default blue). Pressing `l` overwrites the previous lap. When no lap is set, the secondary display shows "Stopwatch".
 
 ## 🛠️ Installation & Building
 

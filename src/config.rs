@@ -87,6 +87,7 @@ pub struct ColorConfig {
     pub stopwatch_idle_color: ratatui::style::Color,
     pub menu_color: ratatui::style::Color,
     pub alert_color: ratatui::style::Color,
+    pub stopwatch_lap_color: ratatui::style::Color,
 }
 
 impl ColorConfig {
@@ -100,6 +101,7 @@ impl ColorConfig {
             stopwatch_idle_color: color_from_str("White"),
             menu_color: color_from_str("DarkGray"),
             alert_color: color_from_str("Red"),
+            stopwatch_lap_color: color_from_str("Blue"),
         }
     }
 }
@@ -168,6 +170,7 @@ struct RawConfig {
     stopwatch_idle_color: String,
     menu_color: String,
     alert_color: String,
+    stopwatch_lap_color: String,
     countdown_default_seconds: u64,
     use_24h_format: bool,
     default_mode: Option<String>,
@@ -185,6 +188,7 @@ fn default_raw_config() -> RawConfig {
         stopwatch_idle_color: "White".into(),
         menu_color: "DarkGray".into(),
         alert_color: "Red".into(),
+        stopwatch_lap_color: "Blue".into(),
         countdown_default_seconds: 25 * 60,
         use_24h_format: false,
         default_mode: None,
@@ -211,6 +215,7 @@ fn load_from_content(content: &str) -> Result<AppConfig, String> {
             stopwatch_idle_color: color_from_str(&raw.stopwatch_idle_color),
             menu_color: color_from_str(&raw.menu_color),
             alert_color: color_from_str(&raw.alert_color),
+            stopwatch_lap_color: color_from_str(&raw.stopwatch_lap_color),
         },
         countdown_default_seconds: raw.countdown_default_seconds,
         use_24h_format: raw.use_24h_format,
@@ -270,6 +275,7 @@ mod tests {
         assert_eq!(cfg.countdown_default_seconds, 25 * 60);
         assert!(!cfg.use_24h_format);
         assert_eq!(cfg.default_mode, DefaultMode::Time);
+        assert_eq!(cfg.colors.stopwatch_lap_color, ratatui::style::Color::Blue);
     }
 
     #[test]
@@ -287,6 +293,7 @@ countdown_default_seconds = 300
 use_24h_format = true
 default_mode = "countdown"
 time_color = "Red"
+stopwatch_lap_color = "Cyan"
 "#;
         let cfg = load_from_content(toml_str).expect("should parse toml");
         assert_eq!(cfg.colors.time_color, ratatui::style::Color::Red);
@@ -294,5 +301,6 @@ time_color = "Red"
         assert_eq!(cfg.countdown_default_seconds, 300);
         assert!(cfg.use_24h_format);
         assert_eq!(cfg.default_mode, DefaultMode::Countdown);
+        assert_eq!(cfg.colors.stopwatch_lap_color, ratatui::style::Color::Cyan);
     }
 }
