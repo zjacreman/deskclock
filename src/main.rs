@@ -340,290 +340,7 @@ mod tests {
     use std::time::Duration;
 
     // ============================================================
-    // Stopwatch Tests
-    // ============================================================
-
-    #[test]
-    fn test_stopwatch_new_starts_zeroed() {
-        let sw = Stopwatch::new();
-        assert_eq!(sw.elapsed_time, Duration::ZERO);
-        assert!(sw.last_start_time.is_none());
-        assert!(!sw.is_running);
-    }
-
-    #[test]
-    fn test_stopwatch_start() {
-        let mut sw = Stopwatch::new();
-        assert!(!sw.is_running);
-        sw.start();
-        assert!(sw.is_running);
-        assert!(sw.last_start_time.is_some());
-    }
-
-    #[test]
-    fn test_stopwatch_start_when_already_running_does_nothing() {
-        let mut sw = Stopwatch::new();
-        sw.start();
-        let _start_time = sw.last_start_time.unwrap();
-        std::thread::sleep(Duration::from_millis(10));
-        sw.start();
-        // Should not change - still running from the first start
-        assert!(sw.is_running);
-    }
-
-    #[test]
-    fn test_stopwatch_pause_while_not_running_does_nothing() {
-        let mut sw = Stopwatch::new();
-        sw.pause();
-        assert!(!sw.is_running);
-        assert!(sw.last_start_time.is_none());
-    }
-
-    #[test]
-    fn test_stopwatch_pause_stops_running() {
-        let mut sw = Stopwatch::new();
-        sw.start();
-        std::thread::sleep(Duration::from_millis(50));
-        let _elapsed_before = sw.current_elapsed();
-        sw.pause();
-        assert!(!sw.is_running);
-        assert!(sw.last_start_time.is_none());
-        // elapsed_time should have some value now
-        assert!(sw.elapsed_time >= Duration::ZERO);
-    }
-
-    #[test]
-    fn test_stopwatch_reset_clears_all_state() {
-        let mut sw = Stopwatch::new();
-        sw.start();
-        std::thread::sleep(Duration::from_millis(100));
-        sw.pause();
-        sw.reset();
-        assert_eq!(sw.elapsed_time, Duration::ZERO);
-        assert!(sw.last_start_time.is_none());
-        assert!(!sw.is_running);
-    }
-
-    #[test]
-    fn test_stopwatch_current_elapsed_while_running() {
-        let mut sw = Stopwatch::new();
-        sw.start();
-        let initial_elapsed = sw.current_elapsed();
-        std::thread::sleep(Duration::from_millis(100));
-        let later_elapsed = sw.current_elapsed();
-        // Should have increased
-        assert!(later_elapsed >= initial_elapsed);
-    }
-
-    #[test]
-    fn test_stopwatch_current_elapsed_while_paused() {
-        let mut sw = Stopwatch::new();
-        sw.start();
-        std::thread::sleep(Duration::from_millis(100));
-        let elapsed_at_pause = sw.current_elapsed();
-        sw.pause();
-        // Wait a bit - elapsed should not change while paused
-        std::thread::sleep(Duration::from_millis(100));
-        let elapsed_after_sleep = sw.current_elapsed();
-        // Allow some tolerance for timing
-        assert!(elapsed_after_sleep >= elapsed_at_pause - Duration::from_millis(50));
-        assert!(elapsed_after_sleep <= elapsed_at_pause + Duration::from_millis(50));
-    }
-
-    #[test]
-    fn test_stopwatch_restart_after_pause() {
-        let mut sw = Stopwatch::new();
-        sw.start();
-        std::thread::sleep(Duration::from_millis(100));
-        sw.pause();
-        let elapsed_before_restart = sw.elapsed_time;
-        std::thread::sleep(Duration::from_millis(100));
-        sw.start();
-        assert!(sw.is_running);
-        // After restarting, current_elapsed should be greater than before
-        std::thread::sleep(Duration::from_millis(100));
-        let elapsed_now = sw.current_elapsed();
-        assert!(elapsed_now > elapsed_before_restart);
-    }
-
-    // ============================================================
-    // CountdownTimer Tests
-    // ============================================================
-
-    #[test]
-    fn test_countdown_timer_new_has_default_25_minutes() {
-        let timer = CountdownTimer::with_duration(25 * 60);
-        assert_eq!(timer.duration, Duration::from_secs(25 * 60));
-        assert_eq!(timer.initial_duration, Duration::from_secs(25 * 60));
-        assert!(timer.end_time.is_none());
-        assert!(!timer.is_running);
-        assert!(!timer.is_paused);
-    }
-
-    #[test]
-    fn test_countdown_timer_remaining_when_not_running() {
-        let timer = CountdownTimer::with_duration(25 * 60);
-        assert_eq!(timer.remaining(), Duration::from_secs(25 * 60));
-    }
-
-    #[test]
-    fn test_countdown_timer_start() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        assert!(!timer.is_running);
-        timer.start();
-        assert!(timer.is_running);
-        assert!(!timer.is_paused);
-        assert!(timer.end_time.is_some());
-    }
-
-    #[test]
-    fn test_countdown_timer_start_when_already_running_does_nothing() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.start();
-        let _end_time = timer.end_time.unwrap();
-        std::thread::sleep(Duration::from_millis(10));
-        timer.start();
-        // Should still be running with same end_time (not extended)
-        assert!(timer.is_running);
-    }
-
-    #[test]
-    fn test_countdown_timer_pause_while_not_running_does_nothing() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.pause();
-        assert!(!timer.is_running);
-        assert!(!timer.is_paused);
-        assert!(timer.end_time.is_none());
-    }
-
-    #[test]
-    fn test_countdown_timer_pause_sets_paused_flag() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.start();
-        std::thread::sleep(Duration::from_millis(50));
-        timer.pause();
-        assert!(!timer.is_running);
-        assert!(timer.is_paused);
-        assert!(timer.end_time.is_none());
-    }
-
-    #[test]
-    fn test_countdown_timer_pause_saves_remaining_duration() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        // Set a custom duration
-        timer.duration = Duration::from_secs(100);
-        timer.start();
-        std::thread::sleep(Duration::from_millis(50));
-        let remaining_before_pause = timer.remaining();
-        timer.pause();
-        // Duration should now be approximately what was remaining
-        assert!(timer.duration.as_millis() >= remaining_before_pause.as_millis() - 100);
-        assert!(timer.duration.as_millis() <= remaining_before_pause.as_millis() + 100);
-    }
-
-    #[test]
-    fn test_countdown_timer_reset_restores_initial_duration() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        let initial = timer.initial_duration;
-        // Modify duration without calling start() (which would update initial_duration)
-        timer.duration = Duration::from_secs(10);
-        timer.pause(); // pause does nothing if not running
-        timer.duration = Duration::from_secs(5);
-        timer.reset();
-        assert_eq!(timer.duration, initial);
-        assert_eq!(timer.initial_duration, initial);
-        assert!(!timer.is_running);
-        assert!(!timer.is_paused);
-        assert!(timer.end_time.is_none());
-    }
-
-    #[test]
-    fn test_countdown_timer_finish_sets_zero_duration() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.start();
-        timer.finish();
-        assert_eq!(timer.duration, Duration::ZERO);
-        assert!(!timer.is_running);
-        assert!(timer.is_paused);
-        assert!(timer.end_time.is_none());
-    }
-
-    #[test]
-    fn test_countdown_timer_adjust_minutes_positive() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        let initial = timer.duration;
-        timer.adjust_minutes(5);
-        assert_eq!(timer.duration, initial + Duration::from_secs(300));
-    }
-
-    #[test]
-    fn test_countdown_timer_adjust_minutes_negative() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        let initial = timer.duration;
-        timer.adjust_minutes(-1);
-        assert_eq!(timer.duration, initial - Duration::from_secs(60));
-    }
-
-    #[test]
-    fn test_countdown_timer_adjust_minutes_does_not_go_below_zero() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.duration = Duration::from_secs(30);
-        timer.adjust_minutes(-10); // Should try to subtract 600 seconds
-        assert!(timer.duration >= Duration::ZERO);
-    }
-
-    #[test]
-    fn test_countdown_timer_adjust_seconds_positive() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        let initial = timer.duration;
-        timer.adjust_seconds(30);
-        assert_eq!(timer.duration, initial + Duration::from_secs(30));
-    }
-
-    #[test]
-    fn test_countdown_timer_adjust_seconds_negative() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        let initial = timer.duration;
-        timer.adjust_seconds(-10);
-        assert_eq!(timer.duration, initial - Duration::from_secs(10));
-    }
-
-    #[test]
-    fn test_countdown_timer_adjust_seconds_does_not_go_below_zero() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.duration = Duration::from_secs(5);
-        timer.adjust_seconds(-10); // Should try to subtract 10 seconds
-        assert!(timer.duration >= Duration::ZERO);
-    }
-
-    #[test]
-    fn test_countdown_timer_stop_clears_running_state() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.start();
-        timer.stop();
-        assert!(!timer.is_running);
-        assert!(!timer.is_paused);
-        assert!(timer.end_time.is_none());
-    }
-
-    #[test]
-    fn test_countdown_timer_is_finished_while_running() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.duration = Duration::ZERO;
-        timer.start();
-        // With zero duration, remaining() will be ZERO
-        // is_finished checks is_running && remaining().as_secs() == 0
-        assert!(timer.is_finished());
-    }
-
-    #[test]
-    fn test_countdown_timer_is_finished_when_not_running() {
-        let timer = CountdownTimer::with_duration(25 * 60);
-        assert!(!timer.is_finished());
-    }
-
-    // ============================================================
-    // App Tests
+    // App Core Tests
     // ============================================================
 
     #[test]
@@ -677,44 +394,21 @@ mod tests {
     }
 
     // ============================================================
-    // LargeFont Integration Tests (via App)
+    // AppMode Derivation Tests
     // ============================================================
 
     #[test]
-    fn test_app_font_has_large_font() {
-        let app = App::new();
-        assert_eq!(app.font.glyph_width(), 5);
-        assert_eq!(app.font.glyph_height(), 5);
+    fn test_app_mode_equality() {
+        assert_eq!(AppMode::Time, AppMode::Time);
+        assert_eq!(AppMode::Countdown, AppMode::Countdown);
+        assert_eq!(AppMode::Stopwatch, AppMode::Stopwatch);
     }
 
     #[test]
-    fn test_app_font_can_render_digits() {
-        let app = App::new();
-        for c in '0'..='9' {
-            assert!(
-                app.font.get_glyph(c).is_some(),
-                "Digit {} should have a glyph",
-                c
-            );
-        }
-    }
-
-    #[test]
-    fn test_app_font_can_render_colon() {
-        let app = App::new();
-        assert!(
-            app.font.get_glyph(':').is_some(),
-            "Colon should have a glyph"
-        );
-    }
-
-    #[test]
-    fn test_app_font_can_render_space() {
-        let app = App::new();
-        assert!(
-            app.font.get_glyph(' ').is_some(),
-            "Space should have a glyph"
-        );
+    fn test_app_mode_inequality() {
+        assert_ne!(AppMode::Time, AppMode::Countdown);
+        assert_ne!(AppMode::Time, AppMode::Stopwatch);
+        assert_ne!(AppMode::Countdown, AppMode::Stopwatch);
     }
 
     // ============================================================
@@ -787,7 +481,7 @@ mod tests {
     }
 
     // ============================================================
-    // Notification Tests
+    // App Notifier Tests
     // ============================================================
 
     #[test]
@@ -806,18 +500,9 @@ mod tests {
         assert_eq!(_app.mode, AppMode::Time);
     }
 
-    #[test]
-    fn test_countdown_timer_finish_triggers_notification() {
-        let mock = Box::new(notification::MockNotifier::new());
-        let mut app = App::new().with_notifier(mock);
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.start();
-        timer.finish();
-
-        // Simulate the notification being sent (as the timer finishes)
-        app.notifier
-            .send_notification("Countdown Timer Complete", "00:00 - Timer has finished");
-    }
+    // ============================================================
+    // Integration Tests (App + Modules)
+    // ============================================================
 
     #[test]
     fn test_countdown_timer_finish_sets_correct_state() {
@@ -832,150 +517,15 @@ mod tests {
     }
 
     #[test]
-    fn test_notification_messages_are_correct_format() {
-        let mut notifier = notification::MockNotifier::new();
-        notifier.send_notification("Countdown Timer Complete", "00:00 - Timer has finished");
-        let (title, body) = notifier.last_notification().unwrap();
-        assert_eq!(title, "Countdown Timer Complete");
-        assert_eq!(body, "00:00 - Timer has finished");
-    }
-
-    // ============================================================
-    // Stopwatch Edge Cases
-    // ============================================================
-
-    #[test]
-    fn test_stopwatch_elapsed_time_accrues_across_multiple_pause_cycles() {
-        let mut sw = Stopwatch::new();
-
-        // First cycle
-        sw.start();
-        std::thread::sleep(Duration::from_millis(50));
-        sw.pause();
-        let elapsed_after_first = sw.elapsed_time;
-
-        // Second cycle
-        std::thread::sleep(Duration::from_millis(50)); // Should not add to elapsed
-        sw.start();
-        std::thread::sleep(Duration::from_millis(50));
-        sw.pause();
-
-        let total_elapsed = sw.elapsed_time;
-
-        // Total should be approximately 100ms (two 50ms runs)
-        assert!(total_elapsed >= elapsed_after_first);
-    }
-
-    #[test]
-    fn test_stopwatch_current_elapsed_returns_zero_when_reset() {
-        let sw = Stopwatch::new();
-        assert_eq!(sw.current_elapsed(), Duration::ZERO);
-    }
-
-    // ============================================================
-    // CountdownTimer Edge Cases
-    // ============================================================
-
-    #[test]
-    fn test_countdown_timer_remaining_with_zero_duration() {
+    fn test_countdown_timer_finish_triggers_notification() {
+        let mock = Box::new(notification::MockNotifier::new());
+        let mut app = App::new().with_notifier(mock);
         let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.duration = Duration::ZERO;
-        assert_eq!(timer.remaining(), Duration::ZERO);
-    }
-
-    #[test]
-    fn test_countdown_timer_start_with_zero_duration_sets_running_but_remaining_is_zero() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        timer.duration = Duration::ZERO;
         timer.start();
-        // start() sets is_running = true regardless of duration,
-        // but remaining() will be zero since duration is zero
-        assert!(timer.is_running);
-        assert_eq!(timer.remaining(), Duration::ZERO);
-    }
+        timer.finish();
 
-    #[test]
-    fn test_countdown_timer_adjust_minutes_with_no_running_state() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        let initial = timer.duration;
-        timer.adjust_minutes(10);
-        assert_eq!(timer.duration, initial + Duration::from_secs(600));
-    }
-
-    #[test]
-    fn test_countdown_timer_adjust_seconds_with_no_running_state() {
-        let mut timer = CountdownTimer::with_duration(25 * 60);
-        let initial = timer.duration;
-        timer.adjust_seconds(45);
-        assert_eq!(timer.duration, initial + Duration::from_secs(45));
-    }
-
-    // ============================================================
-    // AppMode Derivation Tests
-    // ============================================================
-
-    #[test]
-    fn test_app_mode_equality() {
-        assert_eq!(AppMode::Time, AppMode::Time);
-        assert_eq!(AppMode::Countdown, AppMode::Countdown);
-        assert_eq!(AppMode::Stopwatch, AppMode::Stopwatch);
-    }
-
-    #[test]
-    fn test_app_mode_inequality() {
-        assert_ne!(AppMode::Time, AppMode::Countdown);
-        assert_ne!(AppMode::Time, AppMode::Stopwatch);
-        assert_ne!(AppMode::Countdown, AppMode::Stopwatch);
-    }
-
-    // ============================================================
-    // LargeFont Edge Cases
-    // ============================================================
-
-    #[test]
-    fn test_large_font_glyphs_are_consistent() {
-        let font = LargeFont::new();
-        // Get a glyph multiple times - should return same reference
-        let glyph1 = font.get_glyph('0');
-        let glyph2 = font.get_glyph('0');
-        assert!(std::ptr::eq(glyph1.unwrap(), glyph2.unwrap()));
-    }
-
-    #[test]
-    fn test_large_font_mixed_case_input() {
-        let font = LargeFont::new();
-        // Test that mixed case works
-        let time_str = "12:34 PM";
-        for c in time_str.chars() {
-            if c.is_alphabetic() {
-                assert!(
-                    font.get_glyph(c).is_some(),
-                    "Character '{}' should have a glyph",
-                    c
-                );
-            }
-        }
-    }
-
-    // ========== Color From Str Tests ========
-
-    #[test]
-    fn test_color_from_str_colors() {
-        assert_eq!(
-            config::color_from_str("Red"),
-            ratatui::style::Color::Red
-        );
-        assert_eq!(
-            config::color_from_str("#FF5733"),
-            ratatui::style::Color::Rgb(255, 87, 51)
-        );
-        assert_eq!(
-            config::color_from_str("rgb(10, 20, 30)"),
-            ratatui::style::Color::Rgb(10, 20, 30)
-        );
-        assert_eq!(
-            config::color_from_str("Cyan"),
-            ratatui::style::Color::Cyan
-        );
+        // Simulate the notification being sent (as the timer finishes)
+        app.notifier
+            .send_notification("Countdown Timer Complete", "00:00 - Timer has finished");
     }
 }

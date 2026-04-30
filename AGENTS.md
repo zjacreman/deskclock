@@ -5,12 +5,13 @@ This is a Rust-based terminal application that displays a large, scaling digital
 ## Architecture & Layout
 
 ### 1. File Structure
-- `src/main.rs`: The main entry point and application logic. It handles the event loop and coordinates between the state and UI.
-- `src/font.rs`: Defines the `LargeFont` system. It contains a map of characters (0-9, :, A, P, M, etc.) represented as 5x5 grids of block characters (`█`).
-- `src/notification.rs`: Defines the `Notifier` trait and concrete implementations (`SystemNotifier` — uses `osascript` on macOS via `cfg(target_os = "macos")`, `notify-rust` on Linux/Windows, `MockNotifier` for testing) that send desktop notifications when the countdown timer completes.
-- `src/timer.rs`: Contains the `CountdownTimer` logic and state management.
-- `src/stopwatch.rs`: Contains the `Stopwatch` logic and state management.
+- `src/main.rs`: The main entry point and application logic. It handles the event loop, mode switching, UI layout, and keyboard input coordination. Contains only App-level integration tests (mode transitions, arrow key handling, notifier setup).
+- `src/font.rs`: Defines the `LargeFont` system. It contains a map of characters (0-9, :, A, P, M, etc.) represented as 5x5 grids of block characters (`█`). Contains 33 glyph validation tests.
+- `src/notification.rs`: Defines the `Notifier` trait and concrete implementations (`SystemNotifier` — uses `osascript` on macOS via `cfg(target_os = "macos")`, `notify-rust` on Linux/Windows, `MockNotifier` for testing) that send desktop notifications when the countdown timer completes. Contains 11 notification tests.
+- `src/timer.rs`: Contains the `CountdownTimer` logic and state management. Contains 23 timer tests.
+- `src/stopwatch.rs`: Contains the `Stopwatch` logic and state management. Contains 17 stopwatch tests.
 - `src/ui.rs`: Contains the scaling rendering engine and layout definitions.
+- `src/config.rs`: Contains configuration loading (`AppConfig`, `ColorConfig`, `DefaultMode`) and the `color_from_str` parser. Contains 7 config tests.
 - `PLAN.md`: The original implementation plan used to develop the project.
 - `Cargo.toml`: Project configuration and dependencies.
 
@@ -69,13 +70,14 @@ cargo test countdown
 
 ### Test Coverage
 
-- **LargeFont** (30 tests): Validates all 37 glyphs (digits, letters, punctuation including `.`, all glyph dimensions (5x5), UTF-8 character counts, case-insensitive mapping, and unknown character handling.
-- **Stopwatch** (16 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, lap recording, lap reset behavior, and ensuring laps don't affect running state.
-- **CountdownTimer** (22 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
-- **App State** (20 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), font integration, and arrow key event gating.
-- **Notification** (16 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
+- **LargeFont** (33 tests): Validates all 37 glyphs (digits, letters, punctuation including `.`, all glyph dimensions (5x5), UTF-8 character counts, case-insensitive mapping, glyph consistency, and mixed case input.
+- **Stopwatch** (17 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, lap recording, lap reset behavior, and ensuring laps don't affect running state.
+- **CountdownTimer** (23 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
+- **App State** (16 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, and AppMode derivation.
+- **Notification** (11 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
+- **Config** (7 tests): Validates default values, TOML parsing, custom values, and `color_from_str` parsing (named colors, hex, and rgb formats).
 
-**Total: 111 unit tests**
+**Total: 107 unit tests**
 
 ## Development Notes for Future Agents
 
@@ -89,6 +91,15 @@ To add new characters (e.g., for a 24h clock or different symbols), add them to 
 - **New lap feature**: Test that `add_lap()` saves the lap, overwrites any previous lap, and `reset()` clears it — verify lap recording doesn't affect running state or elapsed time.
 - **Font changes**: Verify both byte length (`len()`) and character count (`chars().count()`) when dealing with UTF-8 block characters.
 - **Notification features**: Use `MockNotifier` to verify notifications without triggering actual OS calls.
+
+### Testing Locations
+Tests are organized by module in their respective files:
+- `src/font.rs#tests`: 33 LargeFont glyph validation tests
+- `src/stopwatch.rs#tests`: 17 Stopwatch timer tests
+- `src/timer.rs#tests`: 23 CountdownTimer tests
+- `src/notification.rs#tests`: 11 MockNotifier/SystemNotifier tests
+- `src/config.rs#tests`: 7 config parsing tests
+- `src/main.rs#tests`: 16 App integration tests (mode transitions, arrow keys, notifier injection)
 
 ### Layout Changes
 The layout constraints are defined in `src/ui.rs` via the `create_main_layout` function. The three vertical sections use percentage-based constraints (70%, 20%, 10%).

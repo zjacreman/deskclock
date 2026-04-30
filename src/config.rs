@@ -303,4 +303,24 @@ stopwatch_lap_color = "Cyan"
         assert_eq!(cfg.default_mode, DefaultMode::Countdown);
         assert_eq!(cfg.colors.stopwatch_lap_color, ratatui::style::Color::Cyan);
     }
+
+    #[test]
+    fn test_color_from_str_colors() {
+        assert_eq!(
+            color_from_str("Red"),
+            ratatui::style::Color::Red
+        );
+        assert_eq!(
+            color_from_str("#FF5733"),
+            ratatui::style::Color::Rgb(255, 87, 51)
+        );
+        assert_eq!(
+            color_from_str("rgb(10, 20, 30)"),
+            ratatui::style::Color::Rgb(10, 20, 30)
+        );
+        assert_eq!(
+            color_from_str("Cyan"),
+            ratatui::style::Color::Cyan
+        );
+    }
 }

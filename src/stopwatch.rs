@@ -67,6 +67,141 @@ impl Stopwatch {
 mod tests {
     use super::*;
 
+    // ============================================================
+    // Stopwatch Core Tests
+    // ============================================================
+
+    #[test]
+    fn test_stopwatch_new_starts_zeroed() {
+        let sw = Stopwatch::new();
+        assert_eq!(sw.elapsed_time, Duration::ZERO);
+        assert!(sw.last_start_time.is_none());
+        assert!(!sw.is_running);
+    }
+
+    #[test]
+    fn test_stopwatch_start() {
+        let mut sw = Stopwatch::new();
+        assert!(!sw.is_running);
+        sw.start();
+        assert!(sw.is_running);
+        assert!(sw.last_start_time.is_some());
+    }
+
+    #[test]
+    fn test_stopwatch_start_when_already_running_does_nothing() {
+        let mut sw = Stopwatch::new();
+        sw.start();
+        let _start_time = sw.last_start_time.unwrap();
+        std::thread::sleep(Duration::from_millis(10));
+        sw.start();
+        // Should not change - still running from the first start
+        assert!(sw.is_running);
+    }
+
+    #[test]
+    fn test_stopwatch_pause_while_not_running_does_nothing() {
+        let mut sw = Stopwatch::new();
+        sw.pause();
+        assert!(!sw.is_running);
+        assert!(sw.last_start_time.is_none());
+    }
+
+    #[test]
+    fn test_stopwatch_pause_stops_running() {
+        let mut sw = Stopwatch::new();
+        sw.start();
+        std::thread::sleep(Duration::from_millis(50));
+        let _elapsed_before = sw.current_elapsed();
+        sw.pause();
+        assert!(!sw.is_running);
+        assert!(sw.last_start_time.is_none());
+        // elapsed_time should have some value now
+        assert!(sw.elapsed_time >= Duration::ZERO);
+    }
+
+    #[test]
+    fn test_stopwatch_reset_clears_all_state() {
+        let mut sw = Stopwatch::new();
+        sw.start();
+        std::thread::sleep(Duration::from_millis(100));
+        sw.pause();
+        sw.reset();
+        assert_eq!(sw.elapsed_time, Duration::ZERO);
+        assert!(sw.last_start_time.is_none());
+        assert!(!sw.is_running);
+    }
+
+    #[test]
+    fn test_stopwatch_current_elapsed_while_running() {
+        let mut sw = Stopwatch::new();
+        sw.start();
+        let initial_elapsed = sw.current_elapsed();
+        std::thread::sleep(Duration::from_millis(100));
+        let later_elapsed = sw.current_elapsed();
+        assert!(later_elapsed >= initial_elapsed);
+    }
+
+    #[test]
+    fn test_stopwatch_current_elapsed_while_paused() {
+        let mut sw = Stopwatch::new();
+        sw.start();
+        std::thread::sleep(Duration::from_millis(100));
+        let elapsed_at_pause = sw.current_elapsed();
+        sw.pause();
+        std::thread::sleep(Duration::from_millis(100));
+        let elapsed_after_sleep = sw.current_elapsed();
+        assert!(elapsed_after_sleep >= elapsed_at_pause - Duration::from_millis(50));
+        assert!(elapsed_after_sleep <= elapsed_at_pause + Duration::from_millis(50));
+    }
+
+    #[test]
+    fn test_stopwatch_restart_after_pause() {
+        let mut sw = Stopwatch::new();
+        sw.start();
+        std::thread::sleep(Duration::from_millis(100));
+        sw.pause();
+        let elapsed_before_restart = sw.elapsed_time;
+        std::thread::sleep(Duration::from_millis(100));
+        sw.start();
+        assert!(sw.is_running);
+        std::thread::sleep(Duration::from_millis(100));
+        let elapsed_now = sw.current_elapsed();
+        assert!(elapsed_now > elapsed_before_restart);
+    }
+
+    // ============================================================
+    // Stopwatch Edge Cases
+    // ============================================================
+
+    #[test]
+    fn test_stopwatch_elapsed_time_accrues_across_multiple_pause_cycles() {
+        let mut sw = Stopwatch::new();
+
+        sw.start();
+        std::thread::sleep(Duration::from_millis(50));
+        sw.pause();
+        let elapsed_after_first = sw.elapsed_time;
+
+        std::thread::sleep(Duration::from_millis(50));
+        sw.start();
+        std::thread::sleep(Duration::from_millis(50));
+        sw.pause();
+
+        let total_elapsed = sw.elapsed_time;
+        assert!(total_elapsed >= elapsed_after_first);
+    }
+
+    #[test]
+    fn test_stopwatch_current_elapsed_returns_zero_when_reset() {
+        let sw = Stopwatch::new();
+        assert_eq!(sw.current_elapsed(), Duration::ZERO);
+    }
+
+    // ============================================================
+    // Stopwatch Lap Tests
+    // ============================================================
+
     #[test]
     fn test_stopwatch_new_has_no_lap() {
         let sw = Stopwatch::new();

@@ -462,11 +462,38 @@ mod tests {
                     assert!(
                         valid_chars.contains(&ch),
                         "Invalid character '{}' in row {} of glyph '{}'",
-                        ch,
-                        i,
-                        c
+                    ch,
+                    i,
+                    c
                     );
                 }
+            }
+        }
+    }
+
+    // ==================== LargeFont Edge Case Tests ================
+
+    #[test]
+    fn test_large_font_glyphs_are_consistent() {
+        let font = LargeFont::new();
+        // Get a glyph multiple times - should return same reference
+        let glyph1 = font.get_glyph('0');
+        let glyph2 = font.get_glyph('0');
+        assert!(std::ptr::eq(glyph1.unwrap(), glyph2.unwrap()));
+    }
+
+    #[test]
+    fn test_large_font_mixed_case_input() {
+        let font = LargeFont::new();
+        // Test that mixed case works
+        let time_str = "12:34 PM";
+        for c in time_str.chars() {
+            if c.is_alphabetic() {
+                assert!(
+                    font.get_glyph(c).is_some(),
+                    "Character '{}' should have a glyph",
+                    c
+                );
             }
         }
     }
