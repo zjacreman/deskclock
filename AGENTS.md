@@ -11,6 +11,7 @@ This is a Rust-based terminal application that displays a large, scaling digital
 - `src/timer.rs`: Contains the `CountdownTimer` logic and state management. Contains 23 timer tests.
 - `src/stopwatch.rs`: Contains the `Stopwatch` logic and state management. Contains 17 stopwatch tests.
 - `src/ui.rs`: Contains the scaling rendering engine and layout definitions.
+- `src/signal.rs`: Registers SIGTERM and SIGINT handlers that set an `Arc<AtomicBool>` on signal delivery. Contains 4 signal handler tests.
 - `src/config.rs`: Contains configuration loading (`AppConfig`, `ColorConfig`, `DefaultMode`) and the `color_from_str` parser. Contains 7 config tests.
 - `PLAN.md`: The original implementation plan used to develop the project.
 - `Cargo.toml`: Project configuration and dependencies.
@@ -76,8 +77,9 @@ cargo test countdown
 - **App State** (21 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, AppMode derivation, combined quit condition, Ctrl+C key handling, and plain 'c' key handling.
 - **Notification** (15 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, `MockNotifier` notification message formatting, `terminal-notifier` availability detection, cross-platform notification path selection, and enabled/disabled notifier behavior.
 - **Config** (7 tests): Validates default values, TOML parsing, custom values, and `color_from_str` parsing (named colors, hex, and rgb formats).
+- **Signal** (4 tests): Validates `register_signal_handler()` creates a false-initial flag, `Arc` clones share state, flag can be set and read, and multiple signal handler clones all observe the same flag state.
 
-**Total: 115 unit tests**
+**Total: 119 unit tests**
 
 ## Development Notes for Future Agents
 
@@ -99,6 +101,7 @@ Tests are organized by module in their respective files:
 - `src/timer.rs#tests`: 23 CountdownTimer tests
 - `src/notification.rs#tests`: 15 MockNotifier/SystemNotifier/terminal-notifier tests
 - `src/config.rs#tests`: 7 config parsing tests
+- `src/signal.rs#tests`: 4 signal handler tests
 - `src/main.rs#tests`: 21 App integration tests (mode transitions, arrow keys, notifier injection, quit conditions, Ctrl+C handling)
 
 ### Layout Changes
@@ -141,5 +144,6 @@ stopwatch_lap_color = "Cyan"
 - `ratatui`: TUI framework.
 - `crossterm`: Terminal backend and event handling.
 - `chrono`: Time and date formatting.
+- `signal-hook` (all platforms): Cross-platform signal registration for SIGTERM and SIGINT handlers.
 - `notify-rust` (Linux/Windows only): Native OS desktop notifications for timer completion alerts.
 - **macOS**: Uses `terminal-notifier` CLI if available (`terminal-notifier -title "..." -message "..."`), with `osascript display notification` as a fallback if `terminal-notifier` is not installed. (`which terminal-notifier` is used to detect availability.)

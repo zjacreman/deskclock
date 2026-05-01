@@ -14,6 +14,7 @@ use ratatui::{
 };
 use std::{
     error::Error,
+    sync::atomic::Ordering,
     time::{Duration, Instant},
 };
 
@@ -30,6 +31,8 @@ mod timer;
 use timer::CountdownTimer;
 
 mod ui;
+
+mod signal;
 
 mod config;
 use config::{AppConfig, DefaultMode};
@@ -94,6 +97,7 @@ impl App {
 
     fn run(&mut self) -> Result<(), Box<dyn Error>> {
         enable_raw_mode()?;
+        let shutdown = signal::register_signal_handler();
         let mut stdout = std::io::stdout();
         execute!(stdout, EnterAlternateScreen)?;
         let backend = CrosstermBackend::new(stdout);
@@ -313,6 +317,11 @@ impl App {
                         _ => {}
                     }
                 }
+            }
+
+            // Check for external signal (SIGTERM / SIGINT from kill)
+            if shutdown.load(Ordering::SeqCst) {
+                self.should_quit = true;
             }
 
             if last_tick.elapsed() >= tick_rate {

@@ -116,5 +116,6 @@ cargo test countdown
 - **App State** (21 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, AppMode derivation, combined quit condition, Ctrl+C key handling, and plain 'c' key handling.
 - **Notification** (15 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, `MockNotifier` notification message formatting, `terminal-notifier` availability detection, cross-platform notification path selection, and enabled/disabled notifier behavior.
 - **Config** (7 tests): Validates default values, TOML parsing, custom values, and `color_from_str` parsing (named colors, hex, and rgb formats).
+- **Signal** (4 tests): Validates `register_signal_handler()` creates a false-initial flag, `Arc` clones share state, flag can be set and read, and multiple signal handler clones all observe the same flag state.
 
-**Total: 115 unit tests**
+**Total: 119 unit tests**
