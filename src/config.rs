@@ -41,6 +41,7 @@ pub(crate) fn color_from_str(s: &str) -> ratatui::style::Color {
             ) {
                 return ratatui::style::Color::Rgb(r, g, b);
             }
+            eprintln!("deskclock: warning: invalid hex color '{}', defaulting to White", s);
             ratatui::style::Color::White
         }
         s if s.starts_with("rgb(") && s.ends_with(')') => {
@@ -55,9 +56,13 @@ pub(crate) fn color_from_str(s: &str) -> ratatui::style::Color {
                     return ratatui::style::Color::Rgb(r, g, b);
                 }
             }
+            eprintln!("deskclock: warning: invalid rgb color '{}', defaulting to White", s);
             ratatui::style::Color::White
         }
-        _ => ratatui::style::Color::White,
+        _ => {
+            eprintln!("deskclock: warning: unrecognized color '{}', defaulting to White", s);
+            ratatui::style::Color::White
+        }
     }
 }
 
