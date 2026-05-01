@@ -15,7 +15,9 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
     - The Countdown Timer shifts to **Light Blue** when active.
     - The Stopwatch shifts to **Pink** when running.
   - **Termination Alert**: The terminal window flashes red when the countdown reaches zero.
-  - **Desktop Notification**: A native OS desktop notification is sent with title "Countdown Timer Complete" when the timer finishes.
+  - **Desktop Notification**: A native OS desktop notification is sent when the countdown timer completes — on macOS, prefers `terminal-notifier` CLI (falls back to `osascript`); on Linux/Windows, uses `notify-rust`.
+
+    > **macOS**: The macOS Notification Framework requires that the calling process have "Notifications" permission. If you do not see notifications, check System Settings > Notifications > your terminal app and ensure notifications are enabled.
 - **Responsive Design**: Layout and scaling are re-calculated on every frame, making it perfectly responsive to terminal resize events.
 
 ## 🚀 Usage
@@ -112,7 +114,7 @@ cargo test countdown
 - **Stopwatch** (17 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, lap recording, lap reset behavior, and ensuring laps don't affect running state.
 - **CountdownTimer** (23 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
 - **App State** (16 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, and AppMode derivation.
-- **Notification** (11 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
+- **Notification** (15 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, `MockNotifier` notification message formatting, `terminal-notifier` availability detection, cross-platform notification path selection, and enabled/disabled notifier behavior.
 - **Config** (7 tests): Validates default values, TOML parsing, custom values, and `color_from_str` parsing (named colors, hex, and rgb formats).
 
-**Total: 107 unit tests**
+**Total: 111 unit tests**

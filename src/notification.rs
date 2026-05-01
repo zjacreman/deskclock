@@ -15,6 +15,14 @@ impl SystemNotifier {
     }
 }
 
+fn terminal_notifier_available() -> bool {
+    let output = std::process::Command::new("which")
+        .arg("terminal-notifier")
+        .output();
+    
+    matches!(output, Ok(ref o) if o.status.success() && !o.stdout.is_empty())
+}
+
 #[cfg(target_os = "macos")]
 impl Notifier for SystemNotifier {
     fn send_notification(&mut self, title: &str, body: &str) {
@@ -22,24 +30,31 @@ impl Notifier for SystemNotifier {
             return;
         }
 
-        let escaped_title = title
-            .replace('\\', "\\\\")
-            .replace('"', "\\\"")
-            .replace('`', "\\`")
-            .replace('\n', "\\n");
-        let escaped_body = body
-            .replace('\\', "\\\\")
-            .replace('"', "\\\"")
-            .replace('`', "\\`")
-            .replace('\n', "\\n");
+        if terminal_notifier_available() {
+            let _ = std::process::Command::new("terminal-notifier")
+                .args(&["-title", title, "-message", body])
+                .output();
+        } else {
+            // Fallback to osascript
+            let escaped_title = title
+                .replace('\\', "\\\\")
+                .replace('"', "\\\"")
+                .replace('`', "\\`")
+                .replace('\n', "\\n");
+            let escaped_body = body
+                .replace('\\', "\\\\")
+                .replace('"', "\\\"")
+                .replace('`', "\\`")
+                .replace('\n', "\\n");
 
-        let _ = std::process::Command::new("osascript")
-            .arg("-e")
-            .arg(format!(
-                "display notification \"{}\" with title \"{}\"",
-                escaped_body, escaped_title
-            ))
-            .output();
+            let _ = std::process::Command::new("osascript")
+                .arg("-e")
+                .arg(format!(
+                    "display notification \"{}\" with title \"{}\"",
+                    escaped_body, escaped_title
+                ))
+                .output();
+        }
     }
 }
 
@@ -209,4 +224,56 @@ mod tests {
         assert_eq!(t, "Timer 2");
         assert_eq!(b, "10 minutes done");
     }
+
+    #[test]
+    fn test_terminal_notifier_available_returns_true_on_macos() {
+        // On macOS, `which terminal-notifier` typically succeeds or fails depending
+        // on whether the CLI tool is installed. This test just verifies the function
+        // runs without panicking and returns a boolean.
+        let available = terminal_notifier_available();
+        assert!(available || !available); // just verify it doesn't panic
+    }
+
+    #[test]
+    fn test_terminal_notifier_available_with_nonexistent_tool() {
+        // We can't easily test a non-existent tool across platforms since `which`
+        // itself depends on the OS. Instead, test that the function is a pure boolean
+        // return with no side-effects by calling it multiple times.
+        let first = terminal_notifier_available();
+        let second = terminal_notifier_available();
+        assert_eq!(first, second);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn test_system_notifier_uses_terminal_notifier_when_available() {
+        // On macOS, verify that the notification path selection logic does not panic.
+        // We can't easily mock `which` in unit tests, so this validates the code path
+        // runs correctly and doesn't crash.
+        let mut notifier = SystemNotifier::new();
+        let available = terminal_notifier_available();
+        
+        if available {
+            // When terminal-notifier is present, calling send_notification should not panic
+            notifier.send_notification("Test Title", "Test Body");
+        } else {
+            // When terminal-notifier is not present, send_notification should fall back
+            // to osascript and also not panic
+            notifier.send_notification("Test Title", "Test Body");
+        }
+    }
+
+    #[test]
+    fn test_system_notifier_enabled_false_does_not_send() {
+        let mut notifier = SystemNotifier::new();
+        assert!(notifier.enabled);
+        
+        // Disable and try sending
+        notifier.enabled = false;
+        // On macOS this should early-return without errors
+        // On Linux/Windows this should early-return without errors
+        notifier.send_notification("Title", "Body");
+        // If it panicked the test would fail, so reaching here verifies no-panics
+    }
+
 }

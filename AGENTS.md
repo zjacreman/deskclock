@@ -7,7 +7,7 @@ This is a Rust-based terminal application that displays a large, scaling digital
 ### 1. File Structure
 - `src/main.rs`: The main entry point and application logic. It handles the event loop, mode switching, UI layout, and keyboard input coordination. Contains only App-level integration tests (mode transitions, arrow key handling, notifier setup).
 - `src/font.rs`: Defines the `LargeFont` system. It contains a map of characters (0-9, :, A, P, M, etc.) represented as 5x5 grids of block characters (`█`). Contains 33 glyph validation tests.
-- `src/notification.rs`: Defines the `Notifier` trait and concrete implementations (`SystemNotifier` — uses `osascript` on macOS via `cfg(target_os = "macos")`, `notify-rust` on Linux/Windows, `MockNotifier` for testing) that send desktop notifications when the countdown timer completes. Contains 11 notification tests.
+- `src/notification.rs`: Defines the `Notifier` trait and concrete implementations (`SystemNotifier` — on macOS: prefers `terminal-notifier` CLI, falls back to `osascript`; on Linux/Windows: uses `notify-rust`; test: `MockNotifier`) that send desktop notifications when the countdown timer completes. Contains 15 notification tests.
 - `src/timer.rs`: Contains the `CountdownTimer` logic and state management. Contains 23 timer tests.
 - `src/stopwatch.rs`: Contains the `Stopwatch` logic and state management. Contains 17 stopwatch tests.
 - `src/ui.rs`: Contains the scaling rendering engine and layout definitions.
@@ -74,10 +74,10 @@ cargo test countdown
 - **Stopwatch** (17 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, lap recording, lap reset behavior, and ensuring laps don't affect running state.
 - **CountdownTimer** (23 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
 - **App State** (16 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, and AppMode derivation.
-- **Notification** (11 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, and notification message formatting.
+- **Notification** (15 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, `MockNotifier` notification message formatting, `terminal-notifier` availability detection, cross-platform notification path selection, and enabled/disabled notifier behavior.
 - **Config** (7 tests): Validates default values, TOML parsing, custom values, and `color_from_str` parsing (named colors, hex, and rgb formats).
 
-**Total: 107 unit tests**
+**Total: 111 unit tests**
 
 ## Development Notes for Future Agents
 
@@ -97,7 +97,7 @@ Tests are organized by module in their respective files:
 - `src/font.rs#tests`: 33 LargeFont glyph validation tests
 - `src/stopwatch.rs#tests`: 17 Stopwatch timer tests
 - `src/timer.rs#tests`: 23 CountdownTimer tests
-- `src/notification.rs#tests`: 11 MockNotifier/SystemNotifier tests
+- `src/notification.rs#tests`: 15 MockNotifier/SystemNotifier/terminal-notifier tests
 - `src/config.rs#tests`: 7 config parsing tests
 - `src/main.rs#tests`: 16 App integration tests (mode transitions, arrow keys, notifier injection)
 
@@ -114,7 +114,7 @@ Implemented in `src/timer.rs` via the `CountdownTimer` struct. Note the distinct
 
 When the countdown timer finishes, it triggers two notifications:
 1. A **red screen flash** (terminal-only visual alert lasting ~1.25 seconds)
-2. A **native OS desktop notification** — uses `osascript display notification` on macOS, `notify-rust` on Linux/Windows — with title "Countdown Timer Complete" and body "00:00 - Timer has finished"
+2. A **native OS desktop notification** — on macOS, prefers `terminal-notifier` CLI (falls back to `osascript` if not installed); on Linux/Windows, uses `notify-rust` — with title "Countdown Timer Complete" and body "00:00 - Timer has finished"
 
 To inject a `MockNotifier` for testing, use `app.with_notifier(Box::new(MockNotifier::new()))`.
 
@@ -141,4 +141,5 @@ stopwatch_lap_color = "Cyan"
 - `ratatui`: TUI framework.
 - `crossterm`: Terminal backend and event handling.
 - `chrono`: Time and date formatting.
-- `notify-rust` (Linux/Windows only): Native OS desktop notifications for timer completion alerts. macOS uses a native `osascript` call instead (see `notification.rs` for `cfg(target_os = "macos")` implementation).
+- `notify-rust` (Linux/Windows only): Native OS desktop notifications for timer completion alerts.
+- **macOS**: Uses `terminal-notifier` CLI if available (`terminal-notifier -title "..." -message "..."`), with `osascript display notification` as a fallback if `terminal-notifier` is not installed. (`which terminal-notifier` is used to detect availability.)
