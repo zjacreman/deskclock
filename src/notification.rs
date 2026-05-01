@@ -15,6 +15,7 @@ impl SystemNotifier {
     }
 }
 
+#[cfg(target_os = "macos")]
 fn terminal_notifier_available() -> bool {
     let output = std::process::Command::new("which")
         .arg("terminal-notifier")
