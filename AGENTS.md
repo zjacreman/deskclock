@@ -73,11 +73,11 @@ cargo test countdown
 - **LargeFont** (33 tests): Validates all 37 glyphs (digits, letters, punctuation including `.`, all glyph dimensions (5x5), UTF-8 character counts, case-insensitive mapping, glyph consistency, and mixed case input.
 - **Stopwatch** (17 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, lap recording, lap reset behavior, and ensuring laps don't affect running state.
 - **CountdownTimer** (23 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
-- **App State** (18 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, and AppMode derivation.
+- **App State** (21 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, AppMode derivation, combined quit condition, Ctrl+C key handling, and plain 'c' key handling.
 - **Notification** (15 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, `MockNotifier` notification message formatting, `terminal-notifier` availability detection, cross-platform notification path selection, and enabled/disabled notifier behavior.
 - **Config** (7 tests): Validates default values, TOML parsing, custom values, and `color_from_str` parsing (named colors, hex, and rgb formats).
 
-**Total: 113 unit tests**
+**Total: 115 unit tests**
 
 ## Development Notes for Future Agents
 
@@ -99,7 +99,7 @@ Tests are organized by module in their respective files:
 - `src/timer.rs#tests`: 23 CountdownTimer tests
 - `src/notification.rs#tests`: 15 MockNotifier/SystemNotifier/terminal-notifier tests
 - `src/config.rs#tests`: 7 config parsing tests
-- `src/main.rs#tests`: 18 App integration tests (mode transitions, arrow keys, notifier injection)
+- `src/main.rs#tests`: 21 App integration tests (mode transitions, arrow keys, notifier injection, quit conditions, Ctrl+C handling)
 
 ### Layout Changes
 The layout constraints are defined in `src/ui.rs` via the `create_main_layout` function. The three vertical sections use percentage-based constraints (70%, 20%, 10%).
@@ -108,7 +108,7 @@ The layout constraints are defined in `src/ui.rs` via the `create_main_layout` f
 Current scaling is integer-based. For smoother transitions, consider implementing sub-pixel-like approximations or different font tiers.
 
 ### Countdown Timer Implementation Notes
-Implemented in `src/timer.rs` via the `CountdownTimer` struct. Note the distinction between 'paused' (Light Blue, blinking) and 'stopped' (White, static) states. The timer uses `initial_duration` to allow resetting to the last started value.
+Implemented in `src/timer.rs` via the `CountdownTimer` struct. Note the distinction between 'paused' (Cyan, blinking) and 'stopped' (White, static) states. The timer uses `initial_duration` to allow resetting to the last started value.
 
 **Important**: Calling `start()` updates `initial_duration` to the current duration. If you need to preserve the original initial duration, call `start()` only once or manually save it before calling `start()`.
 

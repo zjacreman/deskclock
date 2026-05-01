@@ -23,7 +23,8 @@ countdown_idle_color = "White"     # Timer when stopped
 stopwatch_running_color = "Magenta" # Stopwatch when running
 stopwatch_idle_color = "White"     # Stopwatch when stopped
 menu_color = "DarkGray"  # Bottom command line
-alert_color = "Red"      # Flash on timer complete
+alert_color = "Red"              # Flash on timer complete
+stopwatch_lap_color = "Blue"      # Stopwatch lap display color
 
 # ──────────────────────
 # Timer settings

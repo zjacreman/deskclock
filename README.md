@@ -12,7 +12,7 @@ A high-visibility, scaling digital clock and countdown timer for your terminal. 
 - **Visual Feedback**:
   - **Blinking**: The timer blinks when paused to notify you that it is not actively counting down.
   - **Color Shifting**: 
-    - The Countdown Timer shifts to **Light Blue** when active.
+    - The Countdown Timer shifts to **Cyan** when active.
     - The Stopwatch shifts to **Pink** when running.
   - **Termination Alert**: The terminal window flashes red when the countdown reaches zero.
   - **Desktop Notification**: A native OS desktop notification is sent when the countdown timer completes — on macOS, prefers `terminal-notifier` CLI (falls back to `osascript`); on Linux/Windows, uses `notify-rust`.
@@ -42,8 +42,8 @@ When in Countdown Mode, you have additional controls to manage your session:
 | `←` / `→` | Increase / Decrease seconds |
 
 #### Timer States:
-- **Running**: Display is Light Blue.
-- **Paused**: Display is Light Blue and blinks.
+- **Running**: Display is Cyan.
+- **Paused**: Display is Cyan and blinks.
 - **Stopped/Reset**: Display is White.
 
 ### ⏱️ Stopwatch Controls
@@ -113,8 +113,8 @@ cargo test countdown
 - **LargeFont** (33 tests): Validates all 37 glyphs (digits, letters, punctuation including `.`, all glyph dimensions (5x5), UTF-8 character counts, case-insensitive mapping, glyph consistency, and mixed case input.
 - **Stopwatch** (17 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, lap recording, lap reset behavior, and ensuring laps don't affect running state.
 - **CountdownTimer** (23 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
-- **App State** (18 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, and AppMode derivation.
+- **App State** (21 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, AppMode derivation, combined quit condition, Ctrl+C key handling, and plain 'c' key handling.
 - **Notification** (15 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, `MockNotifier` notification message formatting, `terminal-notifier` availability detection, cross-platform notification path selection, and enabled/disabled notifier behavior.
 - **Config** (7 tests): Validates default values, TOML parsing, custom values, and `color_from_str` parsing (named colors, hex, and rgb formats).
 
-**Total: 113 unit tests**
+**Total: 115 unit tests**

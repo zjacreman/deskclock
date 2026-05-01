@@ -4,6 +4,7 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
+use crossterm::event::KeyModifiers;
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
@@ -266,6 +267,9 @@ impl App {
                 if let Event::Key(key) = event::read()? {
                     match key.code {
                         KeyCode::Char('q') => self.should_quit = true,
+                        KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                            self.should_quit = true;
+                        }
                         KeyCode::Char('c') => self.mode = AppMode::Countdown,
                         KeyCode::Char('t') => self.mode = AppMode::Time,
                         KeyCode::Char('h') => {
@@ -588,5 +592,54 @@ mod tests {
         // Simulate the notification being sent (as the timer finishes)
         app.notifier
             .send_notification("Countdown Timer Complete", "00:00 - Timer has finished");
+    }
+
+    #[test]
+    fn test_ctrl_c_quits_app() {
+        let mut app = App::new();
+        assert!(!app.should_quit);
+        
+        // Simulate Ctrl+C key event
+        match crossterm::event::Event::Key(crossterm::event::KeyEvent::new(
+            crossterm::event::KeyCode::Char('c'),
+            crossterm::event::KeyModifiers::CONTROL,
+        )) {
+            crossterm::event::Event::Key(key) => match key.code {
+                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    app.should_quit = true;
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+        
+        assert!(app.should_quit, "Ctrl+C should set should_quit");
+    }
+
+    #[test]
+    fn test_plain_c_does_not_quit() {
+        let mut app = App::new();
+        assert!(!app.should_quit);
+        
+        // Simulate plain 'c' key event
+        match crossterm::event::Event::Key(crossterm::event::KeyEvent::new(
+            crossterm::event::KeyCode::Char('c'),
+            crossterm::event::KeyModifiers::NONE,
+        )) {
+            crossterm::event::Event::Key(key) => match key.code {
+                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    app.should_quit = true;
+                }
+                KeyCode::Char('c') => {
+                    // Plain 'c' should be handled by the other match arm (Countdown mode)
+                    app.mode = AppMode::Countdown;
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+        
+        assert!(!app.should_quit, "Plain 'c' should NOT set should_quit");
+        assert_eq!(app.mode, AppMode::Countdown, "Plain 'c' should switch to Countdown");
     }
 }
