@@ -268,7 +268,11 @@ impl App {
                         KeyCode::Char('q') => self.should_quit = true,
                         KeyCode::Char('c') => self.mode = AppMode::Countdown,
                         KeyCode::Char('t') => self.mode = AppMode::Time,
-                        KeyCode::Char('h') => self.use_24h_format = !self.use_24h_format,
+                        KeyCode::Char('h') => {
+                            if let AppMode::Time = &self.mode {
+                                self.use_24h_format = !self.use_24h_format;
+                            }
+                        }
                         KeyCode::Char('s') => self.mode = AppMode::Stopwatch,
                         KeyCode::Char('l') => {
                             if let AppMode::Stopwatch = &self.mode {
@@ -361,6 +365,63 @@ mod tests {
         assert_ne!(app.use_24h_format, initial, "Should toggle to the opposite format");
         app.use_24h_format = !app.use_24h_format;
         assert_eq!(app.use_24h_format, initial, "Should toggle back to the original format");
+    }
+
+    #[test]
+    fn test_toggle_24h_format_does_not_work_outside_time_mode() {
+        // Countdown mode: toggling 'h' should NOT change use_24h_format
+        let mut app = App::new();
+        app.mode = AppMode::Countdown;
+        let initial = app.use_24h_format;
+        match KeyCode::Char('h') {
+            KeyCode::Char('h') => {
+                if let AppMode::Time = &app.mode {
+                    app.use_24h_format = !app.use_24h_format;
+                }
+            }
+            _ => {}
+        }
+        assert_eq!(
+            app.use_24h_format, initial,
+            "Toggling 'h' in Countdown mode should NOT change use_24h_format"
+        );
+
+        // Stopwatch mode: toggling 'h' should NOT change use_24h_format
+        let mut app = App::new();
+        app.mode = AppMode::Stopwatch;
+        let initial = app.use_24h_format;
+        match KeyCode::Char('h') {
+            KeyCode::Char('h') => {
+                if let AppMode::Time = &app.mode {
+                    app.use_24h_format = !app.use_24h_format;
+                }
+            }
+            _ => {}
+        }
+        assert_eq!(
+            app.use_24h_format, initial,
+            "Toggling 'h' in Stopwatch mode should NOT change use_24h_format"
+        );
+    }
+
+    #[test]
+    fn test_toggle_24h_format_works_in_time_mode() {
+        // Confirm the guard allows the toggle when in Time mode
+        let mut app = App::new();
+        app.mode = AppMode::Time;
+        let initial = app.use_24h_format;
+        match KeyCode::Char('h') {
+            KeyCode::Char('h') => {
+                if let AppMode::Time = &app.mode {
+                    app.use_24h_format = !app.use_24h_format;
+                }
+            }
+            _ => {}
+        }
+        assert_ne!(
+            app.use_24h_format, initial,
+            "Toggling 'h' in Time mode SHOULD change use_24h_format"
+        );
     }
 
     #[test]
