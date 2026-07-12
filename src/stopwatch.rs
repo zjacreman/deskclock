@@ -1,10 +1,16 @@
 use std::time::{Duration, Instant};
 
 pub struct Stopwatch {
-    pub elapsed_time: Duration,
-    pub last_start_time: Option<Instant>,
-    pub is_running: bool,
-    pub last_lap: Option<Duration>,
+    elapsed_time: Duration,
+    last_start_time: Option<Instant>,
+    is_running: bool,
+    last_lap: Option<Duration>,
+}
+
+impl Default for Stopwatch {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Stopwatch {
@@ -60,6 +66,18 @@ impl Stopwatch {
         } else {
             self.elapsed_time
         }
+    }
+
+    // ──────────────────────
+    // Accessors
+    // ──────────────────────
+
+    pub fn elapsed_time(&self) -> Duration {
+        self.elapsed_time
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.is_running
     }
 }
 

@@ -1,6 +1,6 @@
 use signal_hook::consts;
-use signal_hook::low_level;
-use std::sync::atomic::{AtomicBool, Ordering};
+use signal_hook::flag;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 /// Registers signal handlers for SIGTERM and SIGINT.
@@ -10,11 +10,11 @@ use std::sync::Arc;
 /// share the same underlying flag, so any handler that sets the flag
 /// will be observable from every clone.
 ///
-/// **Async-signal safety**: This function uses `signal-hook`'s `low_level`
-/// API which installs real POSIX signal handlers. The handlers perform only
-/// `AtomicBool::store` with `SeqCst` ordering, which compiles to a single
+/// **Async-signal safety**: This uses `signal-hook`'s safe `flag::register`
+/// helper, which installs a real POSIX signal handler that performs only an
+/// `AtomicBool::store` with `SeqCst` ordering. That compiles to a single
 /// atomic machine instruction and is async-signal-safe on all supported
-/// platforms.
+/// platforms. No `unsafe` is required on our side.
 ///
 /// **Note**: After calling `enable_raw_mode()` in `main.rs`, SIGINT from
 /// Ctrl+C is no longer delivered by the terminal driver (ISIG is cleared).
@@ -22,25 +22,11 @@ use std::sync::Arc;
 /// another terminal session sending Ctrl+C).
 pub fn register_signal_handler() -> Arc<AtomicBool> {
     let shutdown = Arc::new(AtomicBool::new(false));
-    let shutdown_clone = shutdown.clone();
 
-    // Safety: The closure only performs an atomic store which is async-signal-safe.
-    unsafe {
-        low_level::register(consts::SIGTERM, move || {
-            shutdown_clone.store(true, Ordering::SeqCst);
-        })
+    flag::register(consts::SIGTERM, Arc::clone(&shutdown))
         .expect("failed to register SIGTERM handler");
-    }
-
-    let shutdown_clone = shutdown.clone();
-
-    // Safety: The closure only performs an atomic store which is async-signal-safe.
-    unsafe {
-        low_level::register(consts::SIGINT, move || {
-            shutdown_clone.store(true, Ordering::SeqCst);
-        })
+    flag::register(consts::SIGINT, Arc::clone(&shutdown))
         .expect("failed to register SIGINT handler");
-    }
 
     shutdown
 }
@@ -48,6 +34,7 @@ pub fn register_signal_handler() -> Arc<AtomicBool> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::Ordering;
 
     #[test]
     fn test_register_signal_handler_initial_flag_is_false() {

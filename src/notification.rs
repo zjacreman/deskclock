@@ -9,9 +9,25 @@ pub struct SystemNotifier {
     enabled: bool,
 }
 
+impl Default for SystemNotifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SystemNotifier {
     pub fn new() -> Self {
         Self { enabled: true }
+    }
+
+    #[cfg(test)]
+    pub fn enabled(&self) -> bool {
+        self.enabled
+    }
+
+    #[cfg(test)]
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
     }
 }
 
@@ -269,10 +285,10 @@ mod tests {
     #[test]
     fn test_system_notifier_enabled_false_does_not_send() {
         let mut notifier = SystemNotifier::new();
-        assert!(notifier.enabled);
-        
+        assert!(notifier.enabled());
+
         // Disable and try sending
-        notifier.enabled = false;
+        notifier.set_enabled(false);
         // On macOS this should early-return without errors
         // On Linux/Windows this should early-return without errors
         notifier.send_notification("Title", "Body");

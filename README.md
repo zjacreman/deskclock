@@ -44,7 +44,10 @@ When in Countdown Mode, you have additional controls to manage your session:
 #### Timer States:
 - **Running**: Display is Cyan.
 - **Paused**: Display is Cyan and blinks.
+- **Finished**: Display is White and the middle line reads "Complete" (the countdown reached zero and was acknowledged).
 - **Stopped/Reset**: Display is White.
+
+The arrow keys (`↑↓`/`←→`) adjust minutes/seconds even while the timer is running — the timer keeps running and the remaining time is recomputed, rather than silently stopping.
 
 ### ⏱️ Stopwatch Controls
 When in Stopwatch Mode, you have the following controls:
@@ -60,7 +63,7 @@ When in Stopwatch Mode, you have the following controls:
 - **1 hour or more**: `HH:MM:SS` (hours, minutes, seconds) — the dot separator cannot fit all six values in the terminal width
 
 ### Lap Times
-The current lap time is shown in the secondary (middle) display in the configured lap color (default blue). Pressing `l` overwrites the previous lap. When no lap is set, the secondary display shows "Stopwatch".
+The current lap time is shown in the secondary (middle) display in the configured lap color (default blue). Pressing `l` overwrites the previous lap. When no lap is set, the secondary display shows "Stopwatch". The lap uses the same `MM:SS.cs` (<1 hour) / `HH:MM:SS` (≥1 hour) format as the main stopwatch, so a lap that crosses one hour is not truncated.
 
 ## 🛠️ Installation & Building
 
@@ -112,10 +115,10 @@ cargo test countdown
 
 - **LargeFont** (33 tests): Validates all 37 glyphs (digits, letters, punctuation including `.`, all glyph dimensions (5x5), UTF-8 character counts, case-insensitive mapping, glyph consistency, and mixed case input.
 - **Stopwatch** (17 tests): Tests start/pause/reset lifecycle, idempotency, time accumulation across pause cycles, lap recording, lap reset behavior, and ensuring laps don't affect running state.
-- **CountdownTimer** (23 tests): Covers initialization, start/pause/reset flow, duration adjustments, boundary conditions (zero duration), remaining time calculation, and timer state persistence.
-- **App State** (21 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch), arrow key event gating, AppMode derivation, combined quit condition, Ctrl+C key handling, and plain 'c' key handling.
-- **Notification** (15 tests): Validates `Notifier` trait implementations, `MockNotifier` behavior, `MockNotifier` notification message formatting, `terminal-notifier` availability detection, cross-platform notification path selection, and enabled/disabled notifier behavior.
-- **Config** (7 tests): Validates default values, TOML parsing, custom values, and `color_from_str` parsing (named colors, hex, and rgb formats).
+- **CountdownTimer** (28 tests): Covers initialization, start/pause/reset flow, duration adjustments (including adjusting while running), boundary conditions (zero duration), remaining time calculation, and the explicit finished state / `has_expired()` detection.
+- **App / Key Dispatch** (28 tests): Validates default state, mode transitions (Time/Countdown/Stopwatch) via the `handle_key` dispatch, arrow key event gating, AppMode derivation, Ctrl+C handling, Space start/pause, 'r' reset, 'l' lap-key gating, and notifier injection.
+- **Notification** (15 tests; 3 are macOS-only): Validates `Notifier` trait implementations, `MockNotifier` behavior, `MockNotifier` notification message formatting, `terminal-notifier` availability detection, cross-platform notification path selection, and enabled/disabled notifier behavior.
+- **Config** (16 tests): Validates default values, TOML parsing, custom values, single-source default consolidation, missing-field fallback, and `parse_color`/`color_from_str` parsing (named colors, hex, rgb, and error paths).
 - **Signal** (4 tests): Validates `register_signal_handler()` creates a false-initial flag, `Arc` clones share state, flag can be set and read, and multiple signal handler clones all observe the same flag state.
 
-**Total: 119 unit tests**
+**Total: 141 defined tests (138 run on non-macOS; 3 are macOS-only).**

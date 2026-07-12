@@ -19,8 +19,8 @@ pub fn create_main_layout(area: Rect) -> Vec<Rect> {
 }
 
 pub fn render_large_text(f: &mut Frame, area: Rect, text: &str, color: Color, font: &LargeFont) {
-    let base_w = font.glyph_width() as usize;
-    let base_h = font.glyph_height() as usize;
+    let base_w = font.glyph_width();
+    let base_h = font.glyph_height();
     let text_chars: Vec<char> = text.chars().collect();
     let num_chars = text_chars.len();
 
