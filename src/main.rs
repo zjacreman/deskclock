@@ -4,7 +4,7 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use crossterm::event::KeyModifiers;
+use crossterm::event::{KeyEventKind, KeyModifiers};
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
@@ -269,6 +269,12 @@ impl App {
 
             if event::poll(timeout)? {
                 if let Event::Key(key) = event::read()? {
+                    // On Windows, crossterm emits key events for both Press and
+                    // Release, which would otherwise cause every keystroke to
+                    // be processed twice. Only handle Press events.
+                    if key.kind != KeyEventKind::Press {
+                        continue;
+                    }
                     match key.code {
                         KeyCode::Char('q') => self.should_quit = true,
                         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {

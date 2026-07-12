@@ -226,6 +226,7 @@ mod tests {
         assert_eq!(b, "10 minutes done");
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn test_terminal_notifier_available_returns_true_on_macos() {
         // On macOS, `which terminal-notifier` typically succeeds or fails depending
@@ -235,6 +236,7 @@ mod tests {
         assert!(available || !available); // just verify it doesn't panic
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
     fn test_terminal_notifier_available_with_nonexistent_tool() {
         // We can't easily test a non-existent tool across platforms since `which`
